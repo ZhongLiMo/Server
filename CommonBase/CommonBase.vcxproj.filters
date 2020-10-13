@@ -15,13 +15,7 @@
     <ClCompile Include="mylog.cpp">
       <Filter>code</Filter>
     </ClCompile>
-    <ClCompile Include="Epoll.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="TCPClient.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="TCPServer.cpp">
+    <ClCompile Include="tcpserver.cpp">
       <Filter>network</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,13 +26,7 @@
     <ClInclude Include="mylog.h">
       <Filter>code</Filter>
     </ClInclude>
-    <ClInclude Include="Epoll.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="TCPClient.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="TCPServer.h">
+    <ClInclude Include="tcpserver.h">
       <Filter>network</Filter>
     </ClInclude>
   </ItemGroup>

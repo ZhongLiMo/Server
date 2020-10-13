@@ -2,46 +2,34 @@
 #define TCP_SERVER_H
 
 
-#include <map>      //map
-#include <memory>   //shared_ptr
-#include <mutex>    //mutex
-
-#include "Epoll.h"
-#include "TCPClient.h"
-
-namespace Net
-{
+#include <WS2tcpip.h>
+#pragma comment(lib,"ws2_32.lib")
 
 class TCPServer
 {
 public:
-    TCPServer();
-    virtual ~TCPServer();
-
-    int initServer(std::string ip, int port);
-    void deleteClient(int fd);
-
+	TCPServer(int port = 8000);
+	virtual ~TCPServer();
 private:
-    TCPServer& operator=(const TCPServer&) = delete;
-    TCPServer(const TCPServer&) = delete;
-
-    int bindListen();
-    int epoll();
-    void doEpoll();
-    int handleAccept();
-    int handleReadData(int fd);
-
+	void bind_and_listen();
+	void wait_client();
 private:
-    int m_fd;
-    int m_port;
-    Epoll m_epoll;
-    std::mutex mutex;
-    std::string m_ip;
-    std::map<int, std::vector<std::string>> m_fdSendBuf;
-    std::map<int, std::shared_ptr<TCPClient>> m_fdClientMap;
+	int		m_port;
+	SOCKET  m_socket;
+	fd_set m_sock_set;
+	fd_set m_read_set;
 };
 
-}  //namespace Net
 
 
-#endif  //TCP_SERVER_H
+
+
+
+
+
+
+
+
+
+
+#endif // !TCP_SERVER_H

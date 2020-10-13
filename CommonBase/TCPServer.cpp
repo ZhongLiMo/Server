@@ -1,145 +1,120 @@
-#include "TCPServer.h"
+#include "tcpserver.h"
 
+#include "mylog.h"
 
-namespace Net
+extern MyLog tcplog;
+
+TCPServer::TCPServer(int port) : m_port(port)
 {
-
-//鍙湁涓�涓嚎绋嬩細璁块棶锛屼笉闇�瑕侀攣
-static const int EVENTS_SIZE = 100;
-static struct epoll_event events[EVENTS_SIZE];
-
-TCPServer::TCPServer() : m_fd(-1), m_port(-1)
-{
-
+	bind_and_listen();
+	wait_client();
 }
-
 TCPServer::~TCPServer()
 {
-    if (m_fd != -1)
-    {
-        close(m_fd);
-    }
-}
-
-int TCPServer::initServer(std::string ip, int port)
-{
-    m_ip = ip;
-    m_port = port;
-    int ret = bindListen();
-    if (ret != 0)
-    {
-        return ret;
-    }
-    ret = epoll();
-    if (ret != 0)
-    {
-        return ret;
-    }
-    return 0;
-}
-
-void TCPServer::deleteClient(int fd)
-{
-    std::map<int, std::shared_ptr<TCPClient>>::iterator ite = m_fdClientMap.find(fd);
-    if (ite != m_fdClientMap.end())
-    {
-        ite->second->offline();
-        m_fdClientMap.erase(ite);
-        m_epoll.removeListener(fd);
-    }
-}
-
-int TCPServer::bindListen()
-{
-    struct sockaddr_in addr;
-    m_fd = socket(PF_INET, SOCK_STREAM, 0);
-	if (m_fd < 0)
-    {
-		return -1;
+	for (u_int i = 0; i < m_sock_set.fd_count; ++i)
+	{
+		closesocket(m_sock_set.fd_array[i]);
 	}
-    bzero(&addr, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(m_port);
-	addr.sin_addr.s_addr = inet_addr(m_ip.c_str());
-	if (addr.sin_addr.s_addr == INADDR_NONE)
-    {
-        close(m_fd);
-		return -2;
+	WSACleanup();
+}
+void TCPServer::bind_and_listen()
+{
+	WSADATA wsaData;
+	WORD version = MAKEWORD(2, 2);
+	int result = WSAStartup(version, &wsaData);
+	if (result) tcplog.SaveLog(LOG_FATAL, "WSAStartup() error.");
+	m_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (m_socket == INVALID_SOCKET)
+	{
+		WSACleanup();
+		tcplog.SaveLog(LOG_FATAL, "socket() error.");
 	}
-	int on = 1;
-	if (setsockopt(m_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0)
-    {
-		close(m_fd);
-		return -3;
+	sockaddr_in svrAddress;
+	svrAddress.sin_family = AF_INET;
+	svrAddress.sin_addr.s_addr = INADDR_ANY;
+	svrAddress.sin_port = htons(m_port);
+	result = bind(m_socket, (sockaddr*)&svrAddress, sizeof(svrAddress));
+	if (result == SOCKET_ERROR)
+	{
+		closesocket(m_socket);
+		WSACleanup();
+		tcplog.SaveLog(LOG_FATAL, "bind() error.");
 	}
-	if (bind(m_fd, (struct sockaddr *) &addr, sizeof(addr)) < 0)
-    {
-		close(m_fd);
-		return -4;
+	result = listen(m_socket, 5);
+	if (result == SOCKET_ERROR)
+	{
+		closesocket(m_socket);
+		WSACleanup();
+		tcplog.SaveLog(LOG_FATAL, "listen() error.");
 	}
-	fcntl(m_fd, F_SETFL, fcntl(m_fd, F_GETFL, 0)|O_NONBLOCK);
-	listen(m_fd, 10000);
-    return 0;
+	tcplog.SaveLog(LOG_INFO, "Server start OK! listen port:%d.", m_port);
 }
-
-int TCPServer::epoll()
+void TCPServer::wait_client()
 {
-    int ret = m_epoll.create();
-    if (ret != 0)
-    {
-        return ret;
-    }
-    ret = m_epoll.addListener(m_fd);
-    if (ret != 0)
-    {
-        return ret;
-    }
-    std::thread epollThread(&TCPServer::doEpoll, std::ref(this));
-    epollthread.detach();
-    return 0;
+	FD_ZERO(&m_sock_set);
+	FD_SET(m_socket, &m_sock_set);
+	while (true)
+	{
+		m_read_set = m_sock_set;
+		int result = select(100000, &m_read_set, NULL, NULL, NULL);
+		if (result == SOCKET_ERROR)
+		{
+			tcplog.SaveLog(LOG_ERROR, "select() error.");
+			continue;
+		}
+		if (FD_ISSET(m_socket, &m_read_set))
+		{
+			sockaddr_in clientAddr;
+			int len = sizeof(clientAddr);
+			SOCKET clientSocket = accept(m_socket, (sockaddr*)&clientAddr, &len);
+			if (clientSocket == INVALID_SOCKET)
+			{
+				tcplog.SaveLog(LOG_ERROR, "accept() error.");
+			}
+			else
+			{
+				FD_SET(clientSocket, &m_sock_set);
+				char ipAddress[16] = { 0 };
+				inet_ntop(AF_INET, &clientAddr, ipAddress, 16);
+				tcplog.SaveLog(LOG_INFO, "new client login IP(%s:%d) total num:%d.", ipAddress, ntohs(clientAddr.sin_port), m_sock_set.fd_count - 1);
+				continue;
+			}
+		}
+		for (u_int i = 0; i < m_sock_set.fd_count;)
+		{
+			SOCKET socket = m_sock_set.fd_array[i];
+			sockaddr_in clientAddr;
+			int len = sizeof(clientAddr);
+			getpeername(socket, (struct sockaddr *)&clientAddr, &len);
+			char ipAddress[16] = { 0 };
+			inet_ntop(AF_INET, &clientAddr, ipAddress, 16);
+			if (FD_ISSET(socket, &m_read_set))
+			{
+				char bufRecv[100];
+				result = recv(socket, bufRecv, 100, 0);
+				if (result == SOCKET_ERROR)
+				{
+					DWORD err = WSAGetLastError();
+					if (err == WSAECONNRESET) tcplog.SaveLog(LOG_INFO, "client IP(%s:%d) shutdown.", ipAddress, ntohs(clientAddr.sin_port));
+					else tcplog.SaveLog(LOG_INFO, "recv() error.", ipAddress, ntohs(clientAddr.sin_port));
+					closesocket(socket);
+					FD_CLR(socket, &m_sock_set);
+				}
+				else if (result == 0)
+				{
+					closesocket(socket);
+					FD_CLR(socket, &m_sock_set);
+					tcplog.SaveLog(LOG_INFO, "client IP(%s:%d) logout.", ipAddress, ntohs(clientAddr.sin_port));
+				}
+				else
+				{
+					bufRecv[result] = '\0';
+					tcplog.SaveLog(LOG_INFO, "recv client IP(%s:%d) msg(%s).", ipAddress, ntohs(clientAddr.sin_port), bufRecv);
+					char szSend[256] = "朕已经收到，你可以滚了！";
+					send(socket, szSend, strlen(szSend), 0);
+					++i;
+				}
+			}
+		}
+	}
 }
-
-void TCPServer::doEpoll()
-{
-    while (1)
-    {
-        int num = m_epoll.listen(events, EVENTS_SIZE);
-        if (num > 0)
-        {
-            for (int i = 0; i < num; ++i)
-            {
-                if (events[i].events&EPOLLIN)
-                {
-                    if (events[i].data.fd == m_fd)
-                    {
-                        handleAccept();
-                        //std::thread acceptThread(&TCPServer::handleAccept, std::ref(this));
-                        //acceptThread.detach();
-                    }
-                    else
-                    {
-                        handleReadData(events[i].data.fd);
-                        //std::thread readDataThread(&TCPServer::handleReadData, std::ref(this), events[i].data.fd);
-                        //readDataThread.detach();
-                    }
-                }
-            }
-        }
-    }
-}
-
-int TCPServer::handleAccept()
-{
-    
-}
-
-int TCPServer::handleReadData(int fd)
-{
-    std::map<int, std::shared_ptr<TCPClient>>::iterator ite = m_fdClientMap.find(fd);
-    if (ite != m_fdClientMap.end())
-    {
-        ite->second->handleReadData();
-    }
-}
-
-}  //namespace Net
