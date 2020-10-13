@@ -2,12 +2,13 @@
 #define BASE_FUNC_H
 
 #include <ctime>
+#include <string>
 
 namespace BASE_FUNC
 {
-	tm		get_cur_tm_time();
-
-
+	tm		GetCurTmTime();
+	int		GetCurTimeMS();
+	bool	CreateDirectory(const std::string& file_dir);
 
 
 

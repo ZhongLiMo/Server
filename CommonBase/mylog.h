@@ -3,6 +3,7 @@
 
 #include <string>
 
+
 enum LOG_LEVEL
 {
 	LOG_LEVEL_FATAL = 0,
@@ -13,64 +14,35 @@ enum LOG_LEVEL
 	LOG_LEVEL_DEBUG = 5
 };
 
+#define LOG_FATAL LOG_LEVEL_FATAL, __LINE__, __FUNCTION__
+#define LOG_ERROR LOG_LEVEL_ERROR, __LINE__, __FUNCTION__
+#define LOG_WARN  LOG_LEVEL_WARN , __LINE__, __FUNCTION__
+#define LOG_INFO  LOG_LEVEL_INFO , __LINE__, __FUNCTION__
+#define LOG_PROTO LOG_LEVEL_PROTO, __LINE__, __FUNCTION__
+#define LOG_DEBUG LOG_LEVEL_DEBUG, __LINE__, __FUNCTION__
+
 class MyLog
 {
 public:
-	void Start(std::string log_file, std::string file_dir, long max_size = 1024 * 1024 * 100, LOG_LEVEL log_level = LOG_LEVEL_DEBUG);
-	void SaveLog(LOG_LEVEL log_level, char *format, ...);
-	static MyLog* Instance()
-	{
-		static MyLog mylog;
-		return &mylog;
-	}
-private:
-	MyLog();
+	MyLog(std::string file_name, std::string file_dir, long max_size = 1024 * 1024 * 100, LOG_LEVEL log_level = LOG_LEVEL_DEBUG);
+	void SaveLog(LOG_LEVEL log_level, int line, const char *func, const char *format, ...);
 	~MyLog();
+private:
 	MyLog(const MyLog&) = delete;
+	const MyLog& operator=(const MyLog&) = delete;
+	void output();
 	void check_log_file();
 	bool check_log_date();
 	std::string get_file_name();
-	void output(char *buf, int cnt);
 private:
-	struct tm			m_cur_day;
+	struct tm			m_cur_time;
 	long				m_max_size;
 	FILE*				m_log_file;
 	std::string			m_file_name;
 	std::string			m_file_dir;
 	LOG_LEVEL			m_log_level;
+	char				m_format_buf[102400];
 };
 
-extern char g_format[10240];
-
-#define log_panic(format, ...)\
-{\
-	snprintf(g_format, sizeof(g_format),"line[%d] func[%s] %s\n", __LINE__, __FUNCTION__, format); \
-	MyLog::Instance()->SaveLog(LOG_LEVEL_FATAL, g_format, ##__VA_ARGS__); \
-}
-#define log_error(format, ...)\
-{\
-	snprintf(g_format, sizeof(g_format),"line[%d] func[%s] %s\n", __LINE__, __FUNCTION__, format); \
-	MyLog::Instance()->SaveLog(LOG_LEVEL_ERROR, g_format, ##__VA_ARGS__); \
-}
-#define log_warn(format, ...)\
-{\
-	snprintf(g_format, sizeof(g_format),"line[%d] func[%s] %s\n", __LINE__, __FUNCTION__, format); \
-	MyLog::Instance()->SaveLog(LOG_LEVEL_WARN, g_format, ##__VA_ARGS__); \
-}
-#define log_info(format, ...)\
-{\
-	snprintf(g_format, sizeof(g_format),"line[%d] func[%s] %s\n", __LINE__, __FUNCTION__, format); \
-	MyLog::Instance()->SaveLog(LOG_LEVEL_INFO, g_format, ##__VA_ARGS__); \
-}
-#define log_proto(format, ...)\
-{\
-	snprintf(g_format, sizeof(g_format),"line[%d] func[%s] %s\n", __LINE__, __FUNCTION__, format); \
-	MyLog::Instance()->SaveLog(LOG_LEVEL_PROTO, g_format, ##__VA_ARGS__); \
-}
-#define log_debug(format, ...)\
-{\
-	snprintf(g_format, sizeof(g_format),"line[%d] func[%s] %s\n", __LINE__, __FUNCTION__, format); \
-	MyLog::Instance()->SaveLog(LOG_LEVEL_DEBUG, g_format, ##__VA_ARGS__); \
-}
 
 #endif // !MYLOG_H
