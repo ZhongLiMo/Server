@@ -28,7 +28,7 @@ namespace BASE_FUNC
 #ifdef _WIN32
 		int ret = _mkdir(file_dir.c_str());
 #else
-		nRet = mkdir(file_dir.c_str(), S_IRWXU);
+		int ret = mkdir(file_dir.c_str(), S_IRWXU);
 #endif
 		if (ret != 0 && errno != EEXIST) return false;
 		return true;
