@@ -4,6 +4,9 @@
     <Filter Include="code">
       <UniqueIdentifier>{eb207d86-035d-43f5-aec4-238552e0152e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="network">
+      <UniqueIdentifier>{915ac0de-d93f-47a5-b5a3-d2d580943792}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="basefunc.cpp">
@@ -12,6 +15,15 @@
     <ClCompile Include="mylog.cpp">
       <Filter>code</Filter>
     </ClCompile>
+    <ClCompile Include="Epoll.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPClient.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPServer.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basefunc.h">
@@ -19,6 +31,15 @@
     </ClInclude>
     <ClInclude Include="mylog.h">
       <Filter>code</Filter>
+    </ClInclude>
+    <ClInclude Include="Epoll.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPClient.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPServer.h">
+      <Filter>network</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

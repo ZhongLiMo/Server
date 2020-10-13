@@ -29,6 +29,7 @@ MyLog::~MyLog()
 }
 void MyLog::SaveLog(LOG_LEVEL log_level, int line, const char *func, const char *format, ...)
 {
+	if (log_level > m_log_level) return;
 	time_t timep;
 	struct tm* tmp;
 	time(&timep);

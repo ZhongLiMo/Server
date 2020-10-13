@@ -126,11 +126,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="basefunc.cpp" />
+    <ClCompile Include="Epoll.cpp" />
     <ClCompile Include="mylog.cpp" />
+    <ClCompile Include="TCPClient.cpp" />
+    <ClCompile Include="TCPServer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basefunc.h" />
+    <ClInclude Include="Epoll.h" />
     <ClInclude Include="mylog.h" />
+    <ClInclude Include="TCPClient.h" />
+    <ClInclude Include="TCPServer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
