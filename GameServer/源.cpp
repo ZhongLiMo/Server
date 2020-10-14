@@ -5,7 +5,7 @@
 using namespace std;
 #pragma comment(lib, "ws2_32.lib")  
 
-#define SERVER_ADDRESS      "192.168.0.1"  
+#define SERVER_ADDRESS      "127.0.0.1"  
 #define SERVER_PORT         8000  
 
 #define SOCKET_NUM          120       /// 客户端socket的个数,修改该值可以改变连接到服务器的客户端个数  

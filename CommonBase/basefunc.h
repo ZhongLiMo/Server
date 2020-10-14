@@ -14,5 +14,4 @@ namespace BASE_FUNC
 
 }
 
-
 #endif // !BASE_FUNC_H

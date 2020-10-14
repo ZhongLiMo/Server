@@ -127,11 +127,13 @@
   <ItemGroup>
     <ClCompile Include="basefunc.cpp" />
     <ClCompile Include="mylog.cpp" />
+    <ClCompile Include="tcpclient.cpp" />
     <ClCompile Include="tcpserver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basefunc.h" />
     <ClInclude Include="mylog.h" />
+    <ClInclude Include="tcpclient.h" />
     <ClInclude Include="tcpserver.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
