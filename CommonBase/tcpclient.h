@@ -4,16 +4,18 @@
 #include <WS2tcpip.h>
 #include <string>
 
+#include "tcppacket.h"
+
 
 class TCPClient
 {
 public:
 	TCPClient(SOCKET socket);
 	virtual ~TCPClient();
-	void OnRecvData(const std::string& data);
+	void OnRecvData(std::shared_ptr<TCPPacket> ptcppacket);
 	void OnConnected();
 	void OnDisconnected();
-	void SendMsg(const std::string& body);
+	void SendMsg(std::shared_ptr<TCPPacket> ptcppacket);
 private:
 	SOCKET  m_socket;
 	

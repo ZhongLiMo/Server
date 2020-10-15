@@ -21,6 +21,9 @@
     <ClCompile Include="tcpclient.cpp">
       <Filter>network</Filter>
     </ClCompile>
+    <ClCompile Include="tcppacket.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basefunc.h">
@@ -33,6 +36,9 @@
       <Filter>network</Filter>
     </ClInclude>
     <ClInclude Include="tcpclient.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="tcppacket.h">
       <Filter>network</Filter>
     </ClInclude>
   </ItemGroup>

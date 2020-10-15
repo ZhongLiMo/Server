@@ -1,11 +1,9 @@
 #include "tcpclient.h"
 
 #include "mylog.h"
-#include "tcpserver.h"
 
 
 extern MyLog tcplog;
-extern TCPServer tcpServer;
 
 
 TCPClient::TCPClient(SOCKET socket) : m_socket(socket)
@@ -14,7 +12,7 @@ TCPClient::TCPClient(SOCKET socket) : m_socket(socket)
 TCPClient::~TCPClient()
 {
 }
-void TCPClient::OnRecvData(const std::string& data)
+void TCPClient::OnRecvData(std::shared_ptr<TCPPacket> ptcppacket)
 {
 	sockaddr_in clientAddr;
 	memset(&clientAddr, 0, sizeof(clientAddr));
@@ -22,8 +20,11 @@ void TCPClient::OnRecvData(const std::string& data)
 	getpeername(m_socket, (struct sockaddr *)&clientAddr, &len);
 	char ipAddress[16] = { 0 };
 	inet_ntop(AF_INET, &clientAddr, ipAddress, 16);
-	tcplog.SaveLog(LOG_INFO, "recv client IP(%s:%d) msg(%s).", ipAddress, ntohs(clientAddr.sin_port), data.c_str());
-	SendMsg("ning jie biao chi shi");
+	tcplog.SaveLog(LOG_INFO, "recv client IP(%s:%d) cmd(%d) datd(%s).", ipAddress, ntohs(clientAddr.sin_port), ptcppacket->safe_check(), ptcppacket->body.c_str());
+	std::shared_ptr<TCPPacket> psend(new TCPPacket);
+	psend->body = "ning jie biao chi shi";
+	psend->pack();
+	SendMsg(psend);
 }
 void TCPClient::OnConnected()
 {
@@ -33,7 +34,8 @@ void TCPClient::OnDisconnected()
 {
 	
 }
-void TCPClient::SendMsg(const std::string& body)
+void TCPClient::SendMsg(std::shared_ptr<TCPPacket> ptcppacket)
 {
-	send(m_socket, body.c_str(), body.length(), 0);
+	
+	send(m_socket, ptcppacket->data.c_str(), ptcppacket->data.length(), 0);
 }

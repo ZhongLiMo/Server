@@ -1,6 +1,7 @@
 #include "tcpserver.h"
 
 #include "mylog.h"
+#include "tcppacket.h"
 
 extern MyLog tcplog;
 
@@ -52,6 +53,8 @@ void TCPServer::wait_client()
 {
 	FD_ZERO(&m_sock_set);
 	FD_SET(m_socket, &m_sock_set);
+	int cur_read_len = 0;
+	char pheader[sizeof(struct Pheader)];
 	while (true)
 	{
 		m_read_set = m_sock_set;
@@ -94,61 +97,99 @@ void TCPServer::wait_client()
 					++i;
 					continue;
 				}
-				SOCKET socket = m_sock_set.fd_array[i];
+				cur_read_len = 0;
+				memset(pheader, 0, sizeof(pheader));
 				memset(m_read_buf, 0, sizeof(m_read_buf));
-				result = recv(socket, m_read_buf, sizeof(m_read_buf), 0);
-
+				SOCKET socket = m_sock_set.fd_array[i];
 				sockaddr_in clientAddr;
 				memset(&clientAddr, 0, sizeof(clientAddr));
 				int len = sizeof(clientAddr);
 				getpeername(socket, (struct sockaddr *)&clientAddr, &len);
 				char ipAddress[16] = { 0 };
 				inet_ntop(AF_INET, &clientAddr, ipAddress, 16);
-
-				if (result == SOCKET_ERROR)
+				while (true)
 				{
-					DWORD err = WSAGetLastError();
-					if (err == WSAECONNRESET) tcplog.SaveLog(LOG_INFO, "client IP(%s:%d) shutdown.", ipAddress, ntohs(clientAddr.sin_port));
-					else tcplog.SaveLog(LOG_INFO, "recv() error.", ipAddress, ntohs(clientAddr.sin_port));
-					closesocket(socket);
-					FD_CLR(socket, &m_sock_set);
-					if (m_client_map.find(socket) == m_client_map.end())
+					if (cur_read_len < sizeof(pheader)) result = recv(socket, pheader, sizeof(pheader) - cur_read_len, 0);
+					else if (cur_read_len == sizeof(pheader) && reinterpret_cast<Pheader*>(pheader)->length == 0) goto ON_RECV_MSG;
+					else result = recv(socket, m_read_buf, sizeof(m_read_buf) - cur_read_len - sizeof(pheader), 0);
+					cur_read_len = cur_read_len + result;
+					if (result == SOCKET_ERROR)
 					{
-						tcplog.SaveLog(LOG_ERROR, "socket not find in map");
-					}
-					else
-					{
-						m_client_map.find(socket)->second->OnDisconnected();
-						m_client_map.erase(socket);
-					}
-				}
-				else if (result == 0)
-				{
-					closesocket(socket);
-					FD_CLR(socket, &m_sock_set);
-					tcplog.SaveLog(LOG_INFO, "client IP(%s:%d) logout.", ipAddress, ntohs(clientAddr.sin_port));
-					if (m_client_map.find(socket) == m_client_map.end())
-					{
-						tcplog.SaveLog(LOG_ERROR, "socket not find in map");
-					}
-					else
-					{
-						m_client_map.find(socket)->second->OnDisconnected();
-						m_client_map.erase(socket);
-					}
-				}
-				else
-				{
-					if (m_client_map.find(socket) == m_client_map.end())
-					{
-						tcplog.SaveLog(LOG_ERROR, "socket not find in map");
+						if (errno == EAGAIN || errno == EINPROGRESS || errno == EINTR || errno == EWOULDBLOCK)
+						{
+							++i;
+							tcplog.SaveLog(LOG_WARN, "recv() error.", ipAddress, ntohs(clientAddr.sin_port));
+							continue;
+						}
+						DWORD err = WSAGetLastError();
+						if (err == WSAECONNRESET) tcplog.SaveLog(LOG_INFO, "client IP(%s:%d) shutdown.", ipAddress, ntohs(clientAddr.sin_port));
+						else tcplog.SaveLog(LOG_INFO, "recv() error.", ipAddress, ntohs(clientAddr.sin_port));
 						closesocket(socket);
 						FD_CLR(socket, &m_sock_set);
+						if (m_client_map.find(socket) == m_client_map.end())
+						{
+							tcplog.SaveLog(LOG_ERROR, "socket not find in map");
+						}
+						else
+						{
+							m_client_map.find(socket)->second->OnDisconnected();
+							m_client_map.erase(socket);
+						}
+						break;
+					}
+					else if (result == 0)
+					{
+						closesocket(socket);
+						FD_CLR(socket, &m_sock_set);
+						tcplog.SaveLog(LOG_INFO, "client IP(%s:%d) logout.", ipAddress, ntohs(clientAddr.sin_port));
+						if (m_client_map.find(socket) == m_client_map.end())
+						{
+							tcplog.SaveLog(LOG_ERROR, "socket not find in map");
+						}
+						else
+						{
+							m_client_map.find(socket)->second->OnDisconnected();
+							m_client_map.erase(socket);
+						}
+						break;
 					}
 					else
 					{
-						m_client_map.find(socket)->second->OnRecvData(m_read_buf);
-						++i;
+						if (cur_read_len == (sizeof(pheader) + reinterpret_cast<Pheader*>(pheader)->length))
+						{
+						ON_RECV_MSG:
+							std::shared_ptr<TCPPacket> ptcppacket(new TCPPacket);
+							if (ptcppacket->save(reinterpret_cast<Pheader*>(pheader), m_read_buf))
+							{
+								if (m_client_map.find(socket) == m_client_map.end())
+								{
+									tcplog.SaveLog(LOG_ERROR, "socket not find in map");
+									closesocket(socket);
+									FD_CLR(socket, &m_sock_set);
+								}
+								else
+								{
+									m_client_map.find(socket)->second->OnRecvData(ptcppacket);
+									++i;
+								}
+							}
+							else
+							{
+								closesocket(socket);
+								FD_CLR(socket, &m_sock_set);
+								tcplog.SaveLog(LOG_ERROR, "client IP(%s:%d) send lenth not right.", ipAddress, ntohs(clientAddr.sin_port));
+								if (m_client_map.find(socket) == m_client_map.end())
+								{
+									tcplog.SaveLog(LOG_ERROR, "socket not find in map");
+								}
+								else
+								{
+									m_client_map.find(socket)->second->OnDisconnected();
+									m_client_map.erase(socket);
+								}
+							}
+							break;
+						}
 					}
 				}
 			}

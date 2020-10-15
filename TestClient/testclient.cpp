@@ -1,9 +1,9 @@
-
 #include <iostream>  
 #include <WS2tcpip.h>  
 #include <WinSock2.H>  
 using namespace std;
 #pragma comment(lib, "ws2_32.lib")  
+#include "tcppacket.h"
 
 #define SERVER_ADDRESS      "127.0.0.1"  
 #define SERVER_PORT         8000  
@@ -109,15 +109,19 @@ void Input()
 	{
 		WaitForSingleObject(hMutex, INFINITE);
 		char szInput[256] = "";
-		printf("Me:");
-		scanf("%s", szInput);
+		printf("Me: cmd mg\n");
+		unsigned int cmd = 0;
+		scanf("%d %[^\n]", &cmd, szInput);
 		if (strcmp(szInput, "exit") == 0)
 		{
 			break;
 		}
 		else
 		{
-			send(socketClient, szInput, strlen(szInput), 0);
+			std::shared_ptr<TCPPacket> ptcppacket(new TCPPacket);
+			ptcppacket->body = szInput;
+			ptcppacket->pack(cmd);
+			send(socketClient, ptcppacket->data.c_str(), ptcppacket->data.length(), 0);
 		}
 		//        printf("\n");
 		ReleaseMutex(hMutex);
@@ -130,7 +134,8 @@ void Recv()
 	while (true)
 	{
 
-		recv(socketClient, g_szBuf, sizeof(g_szBuf), 0);
+		printf("Recv Form Server alllen[%d] cmd[%d] bodylen[%d] msg[%s]\n\n", recv(socketClient, g_szBuf, sizeof(g_szBuf), 0), 
+			reinterpret_cast<Pheader*>(g_szBuf)->cmd, reinterpret_cast<Pheader*>(g_szBuf)->length, g_szBuf + sizeof(Pheader));
 		printf("Me Recv Form Server:%s\n", g_szBuf);
 
 
@@ -143,8 +148,8 @@ DWORD WINAPI ThreadProc(_In_ LPVOID lpParameter)
 	while (true)
 	{
 		WaitForSingleObject(hMutex, INFINITE);
-		recv(socketClient, g_szBuf, sizeof(g_szBuf), 0);
-		printf("Recv Form Server:%s\n\n", g_szBuf);
+		printf("Recv Form Server alllen[%d] cmd[%d] bodylen[%d] msg[%s]\n\n", recv(socketClient, g_szBuf, sizeof(g_szBuf), 0),
+			reinterpret_cast<Pheader*>(g_szBuf)->cmd, reinterpret_cast<Pheader*>(g_szBuf)->length, g_szBuf + sizeof(Pheader));
 		ReleaseMutex(hMutex);
 	}
 
@@ -158,16 +163,19 @@ DWORD WINAPI SendDataThreadProc(_In_ LPVOID lpParameter)
 	{
 		WaitForSingleObject(hMutex, INFINITE);
 		char szInput[256] = "";
-		printf("Me:");
-		scanf("%s", szInput);
+		printf("Me: cmd mg\n");
+		unsigned int cmd = 0;
+		scanf("%d %[^\n]", &cmd, szInput);
 		if (strcmp(szInput, "exit") == 0)
 		{
 			break;
 		}
 		else
 		{
-
-			send(socketClient, szInput, strlen(szInput), 0);
+			std::shared_ptr<TCPPacket> ptcppacket(new TCPPacket);
+			ptcppacket->body = szInput;
+			ptcppacket->pack(cmd);
+			send(socketClient, ptcppacket->data.c_str(), ptcppacket->data.length(), 0);
 
 		}
 		printf("\n");
