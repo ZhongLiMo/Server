@@ -88,7 +88,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;MYDEBUG_ON</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;MYDEBUG_ON</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,6 +127,7 @@
   <ItemGroup>
     <ClCompile Include="basefunc.cpp" />
     <ClCompile Include="mylog.cpp" />
+    <ClCompile Include="player.cpp" />
     <ClCompile Include="tcpclient.cpp" />
     <ClCompile Include="tcppacket.cpp" />
     <ClCompile Include="tcpserver.cpp" />
@@ -134,6 +135,7 @@
   <ItemGroup>
     <ClInclude Include="basefunc.h" />
     <ClInclude Include="mylog.h" />
+    <ClInclude Include="player.h" />
     <ClInclude Include="tcpclient.h" />
     <ClInclude Include="tcppacket.h" />
     <ClInclude Include="tcpserver.h" />

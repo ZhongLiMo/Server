@@ -7,6 +7,10 @@ extern MyLog tcplog;
 
 TCPServer::TCPServer(int port) : m_port(port)
 {
+	WSADATA wsaData;
+	int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (result) tcplog.SaveLog(LOG_FATAL, "WSAStartup() error.");
+	m_socket = get_socket(true);
 	bind_and_listen();
 	wait_client();
 }
@@ -20,16 +24,6 @@ TCPServer::~TCPServer()
 }
 void TCPServer::bind_and_listen()
 {
-	WSADATA wsaData;
-	int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (result) tcplog.SaveLog(LOG_FATAL, "WSAStartup() error.");
-	m_socket = socket(AF_INET, SOCK_STREAM, 0);
-	if (m_socket == INVALID_SOCKET)
-	{
-		WSACleanup();
-		tcplog.SaveLog(LOG_FATAL, "socket() failed error[%d].", WSAGetLastError());
-	}
-	set_socket(m_socket);
 	SOCKADDR_IN sin;
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
@@ -49,12 +43,99 @@ void TCPServer::bind_and_listen()
 	}
 	tcplog.SaveLog(LOG_INFO, "Server start OK! listen port:%d.", m_port);
 }
+SOCKET TCPServer::get_socket(bool is_server)
+{
+	SOCKET socket = ::socket(AF_INET, SOCK_STREAM, 0);
+	if (socket == INVALID_SOCKET)
+	{
+		if (is_server)
+		{
+			WSACleanup();
+			tcplog.SaveLog(LOG_FATAL, "socket() failed error[%d].", WSAGetLastError());
+		}
+		else
+		{
+			tcplog.SaveLog(LOG_ERROR, "socket() failed error[%d].", WSAGetLastError());
+			return INVALID_SOCKET;
+		}
+	}
+	set_socket(socket, is_server);
+	return socket;
+}
+void TCPServer::set_socket(SOCKET& socket, bool is_server)
+{
+	if (INVALID_SOCKET == socket) return;
+	int optval = 1;
+	if (setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval)))
+	{
+		closesocket(socket);
+		if (is_server)
+		{
+			WSACleanup();
+			tcplog.SaveLog(LOG_FATAL, "setsockopt(SO_REUSEADDR) failed error[%d].", WSAGetLastError());
+		}
+		else
+		{
+			tcplog.SaveLog(LOG_ERROR, "setsockopt(SO_REUSEADDR) failed error[%d].", WSAGetLastError());
+			socket = INVALID_SOCKET;
+			return;
+		}
+	}
+	optval = 1;
+	if (setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, (char *)&optval, sizeof(optval)))
+	{
+		closesocket(socket);
+		if (is_server)
+		{
+			WSACleanup();
+			tcplog.SaveLog(LOG_FATAL, "setsockopt(SO_KEEPALIVE) failed error[%d].", WSAGetLastError());
+		}
+		else
+		{
+			tcplog.SaveLog(LOG_ERROR, "setsockopt(SO_KEEPALIVE) failed error[%d].", WSAGetLastError());
+			socket = INVALID_SOCKET;
+			return;
+		}
+	}
+	optval = 32 * 1024;
+	if (setsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char *)&optval, sizeof(optval)))
+	{
+		closesocket(socket);
+		if (is_server)
+		{
+			WSACleanup();
+			tcplog.SaveLog(LOG_FATAL, "setsockopt(SO_SNDBUF) failed error[%d].", WSAGetLastError());
+		}
+		else
+		{
+			tcplog.SaveLog(LOG_ERROR, "setsockopt(SO_SNDBUF) failed error[%d].", WSAGetLastError());
+			socket = INVALID_SOCKET;
+			return;
+		}
+	}
+	unsigned long a = 1;
+	if (ioctlsocket(socket, FIONBIO, &a))
+	{
+		closesocket(socket);
+		if (is_server)
+		{
+			WSACleanup();
+			tcplog.SaveLog(LOG_FATAL, "ioctlsocket() failed error[%d].", WSAGetLastError());
+		}
+		else
+		{
+			tcplog.SaveLog(LOG_ERROR, "ioctlsocket() failed error[%d].", WSAGetLastError());
+			socket = INVALID_SOCKET;
+			return;
+		}
+	}
+}
 void TCPServer::wait_client()
 {
 	FD_ZERO(&m_sock_set);
 	FD_SET(m_socket, &m_sock_set);
 	int cur_read_len = 0;
-	char pheader[sizeof(struct Pheader)];
+	char pheader[TCP_HEAD_LEN];
 	while (true)
 	{
 		m_read_set = m_sock_set;
@@ -72,21 +153,18 @@ void TCPServer::wait_client()
 				memset(&clientAddr, 0, sizeof(clientAddr));
 				int len = sizeof(clientAddr);
 				SOCKET clientSocket = accept(m_socket, (sockaddr*)&clientAddr, &len);
+				set_socket(clientSocket);
 				if (clientSocket == INVALID_SOCKET)
 				{
-					tcplog.SaveLog(LOG_ERROR, "accept() error.");
+					tcplog.SaveLog(LOG_ERROR, "new clientSocket error.");
 				}
 				else
 				{
-					set_socket(clientSocket);
 					FD_SET(clientSocket, &m_sock_set);
-					char ipAddress[16] = { 0 };
-					inet_ntop(AF_INET, &clientAddr, ipAddress, 16);
-					tcplog.SaveLog(LOG_INFO, "new client login IP(%s:%d) total client num:%d.", ipAddress, ntohs(clientAddr.sin_port), cur_client_num());
-					m_client_map.insert(std::make_pair(clientSocket, new TCPClient(clientSocket)));
-					m_client_map[clientSocket]->OnConnected();
-					if (1 == result) continue;
+					tcplog.SaveLog(LOG_INFO, "total client num:%d.", cur_client_num());
+					m_client_map.insert(std::make_pair(clientSocket, new TCPClient(clientSocket, inet_ntoa(clientAddr.sin_addr))));
 				}
+				if (1 == result) continue;
 			}
 			for (u_int i = 0; i < m_sock_set.fd_count;)
 			{
@@ -101,16 +179,10 @@ void TCPServer::wait_client()
 				memset(pheader, 0, sizeof(pheader));
 				memset(m_read_buf, 0, sizeof(m_read_buf));
 				SOCKET socket = m_sock_set.fd_array[i];
-				sockaddr_in clientAddr;
-				memset(&clientAddr, 0, sizeof(clientAddr));
-				int len = sizeof(clientAddr);
-				getpeername(socket, (struct sockaddr *)&clientAddr, &len);
-				char ipAddress[16] = { 0 };
-				inet_ntop(AF_INET, &clientAddr, ipAddress, 16);
 				while (true)
 				{
 					if (cur_read_len < sizeof(pheader)) result = recv(socket, pheader, sizeof(pheader) - cur_read_len, 0);
-					else if (cur_read_len == sizeof(pheader) && reinterpret_cast<Pheader*>(pheader)->length == 0) goto ON_RECV_MSG;
+					else if (cur_read_len == sizeof(pheader) && reinterpret_cast<TCPHeader*>(pheader)->length == 0) goto ON_RECV_MSG;
 					else result = recv(socket, m_read_buf, sizeof(m_read_buf) - cur_read_len - sizeof(pheader), 0);
 					cur_read_len = cur_read_len + result;
 					if (result == SOCKET_ERROR)
@@ -118,12 +190,12 @@ void TCPServer::wait_client()
 						if (errno == EAGAIN || errno == EINPROGRESS || errno == EINTR || errno == EWOULDBLOCK)
 						{
 							++i;
-							tcplog.SaveLog(LOG_WARN, "recv() error.", ipAddress, ntohs(clientAddr.sin_port));
+							tcplog.SaveLog(LOG_WARN, "recv() error.");
 							continue;
 						}
 						DWORD err = WSAGetLastError();
-						if (err == WSAECONNRESET) tcplog.SaveLog(LOG_INFO, "client IP(%s:%d) shutdown.", ipAddress, ntohs(clientAddr.sin_port));
-						else tcplog.SaveLog(LOG_INFO, "recv() error.", ipAddress, ntohs(clientAddr.sin_port));
+						if (err == WSAECONNRESET) tcplog.SaveLog(LOG_INFO, "client shutdown total client num:%d.", cur_client_num() - 1);
+						else tcplog.SaveLog(LOG_INFO, "recv() error.");
 						closesocket(socket);
 						FD_CLR(socket, &m_sock_set);
 						if (m_client_map.find(socket) == m_client_map.end())
@@ -132,7 +204,6 @@ void TCPServer::wait_client()
 						}
 						else
 						{
-							m_client_map.find(socket)->second->OnDisconnected();
 							m_client_map.erase(socket);
 						}
 						break;
@@ -141,25 +212,23 @@ void TCPServer::wait_client()
 					{
 						closesocket(socket);
 						FD_CLR(socket, &m_sock_set);
-						tcplog.SaveLog(LOG_INFO, "client IP(%s:%d) logout.", ipAddress, ntohs(clientAddr.sin_port));
 						if (m_client_map.find(socket) == m_client_map.end())
 						{
 							tcplog.SaveLog(LOG_ERROR, "socket not find in map");
 						}
 						else
 						{
-							m_client_map.find(socket)->second->OnDisconnected();
 							m_client_map.erase(socket);
 						}
 						break;
 					}
 					else
 					{
-						if (cur_read_len == (sizeof(pheader) + reinterpret_cast<Pheader*>(pheader)->length))
+						if (cur_read_len == (sizeof(pheader) + reinterpret_cast<TCPHeader*>(pheader)->length))
 						{
 						ON_RECV_MSG:
-							std::shared_ptr<TCPPacket> ptcppacket(new TCPPacket);
-							if (ptcppacket->save(reinterpret_cast<Pheader*>(pheader), m_read_buf))
+							std::shared_ptr<TCPPacket> ptcppacket = TCPPacket::CreateNew();
+							if (ptcppacket->save_packet(reinterpret_cast<TCPHeader*>(pheader), m_read_buf))
 							{
 								if (m_client_map.find(socket) == m_client_map.end())
 								{
@@ -177,14 +246,13 @@ void TCPServer::wait_client()
 							{
 								closesocket(socket);
 								FD_CLR(socket, &m_sock_set);
-								tcplog.SaveLog(LOG_ERROR, "client IP(%s:%d) send lenth not right.", ipAddress, ntohs(clientAddr.sin_port));
+								tcplog.SaveLog(LOG_ERROR, "client send length not right.");
 								if (m_client_map.find(socket) == m_client_map.end())
 								{
 									tcplog.SaveLog(LOG_ERROR, "socket not find in map");
 								}
 								else
 								{
-									m_client_map.find(socket)->second->OnDisconnected();
 									m_client_map.erase(socket);
 								}
 							}
@@ -194,37 +262,6 @@ void TCPServer::wait_client()
 				}
 			}
 		}
-	}
-}
-void TCPServer::set_socket(SOCKET& socket)
-{
-	int optval = 1;
-	if (setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval)))
-	{
-		WSACleanup();
-		closesocket(socket);
-		tcplog.SaveLog(LOG_FATAL, "setsockopt(SO_REUSEADDR) failed error[%d].", WSAGetLastError());
-	}
-	optval = 1;
-	if (setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, (char *)&optval, sizeof(optval)))
-	{
-		WSACleanup();
-		closesocket(socket);
-		tcplog.SaveLog(LOG_FATAL, "setsockopt(SO_KEEPALIVE) failed error[%d].", WSAGetLastError());
-	}
-	optval = 32 * 1024;
-	if (setsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char *)&optval, sizeof(optval)))
-	{
-		WSACleanup();
-		closesocket(socket);
-		tcplog.SaveLog(LOG_FATAL, "setsockopt(SO_SNDBUF) failed error[%d].", WSAGetLastError());
-	}
-	unsigned long a = 1;
-	if (ioctlsocket(socket, FIONBIO, &a))
-	{
-		WSACleanup();
-		closesocket(socket);
-		tcplog.SaveLog(LOG_FATAL, "ioctlsocket() failed error[%d].", WSAGetLastError());
 	}
 }
 int TCPServer::cur_client_num()

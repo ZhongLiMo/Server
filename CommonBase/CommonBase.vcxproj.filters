@@ -4,7 +4,7 @@
     <Filter Include="code">
       <UniqueIdentifier>{eb207d86-035d-43f5-aec4-238552e0152e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="network">
+    <Filter Include="tcpnet">
       <UniqueIdentifier>{915ac0de-d93f-47a5-b5a3-d2d580943792}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -16,13 +16,16 @@
       <Filter>code</Filter>
     </ClCompile>
     <ClCompile Include="tcpserver.cpp">
-      <Filter>network</Filter>
+      <Filter>tcpnet</Filter>
     </ClCompile>
     <ClCompile Include="tcpclient.cpp">
-      <Filter>network</Filter>
+      <Filter>tcpnet</Filter>
     </ClCompile>
     <ClCompile Include="tcppacket.cpp">
-      <Filter>network</Filter>
+      <Filter>tcpnet</Filter>
+    </ClCompile>
+    <ClCompile Include="player.cpp">
+      <Filter>code</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -33,13 +36,16 @@
       <Filter>code</Filter>
     </ClInclude>
     <ClInclude Include="tcpserver.h">
-      <Filter>network</Filter>
+      <Filter>tcpnet</Filter>
     </ClInclude>
     <ClInclude Include="tcpclient.h">
-      <Filter>network</Filter>
+      <Filter>tcpnet</Filter>
     </ClInclude>
     <ClInclude Include="tcppacket.h">
-      <Filter>network</Filter>
+      <Filter>tcpnet</Filter>
+    </ClInclude>
+    <ClInclude Include="player.h">
+      <Filter>code</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

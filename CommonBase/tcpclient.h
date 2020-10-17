@@ -6,35 +6,20 @@
 
 #include "tcppacket.h"
 
-
 class TCPClient
 {
 public:
-	TCPClient(SOCKET socket);
+	TCPClient(const SOCKET& socket, const std::string& ip);
 	virtual ~TCPClient();
 	void OnRecvData(std::shared_ptr<TCPPacket> ptcppacket);
+	void SendMsg(std::shared_ptr<TCPPacket> ptcppacket);
+	const std::string& GetIP() const { return m_ip; };
+private:
 	void OnConnected();
 	void OnDisconnected();
-	void SendMsg(std::shared_ptr<TCPPacket> ptcppacket);
 private:
 	SOCKET  m_socket;
-	
-
+	std::string m_ip;
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif // !TCP_CLIENT_H

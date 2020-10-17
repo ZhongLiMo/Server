@@ -119,8 +119,7 @@ void Input()
 		else
 		{
 			std::shared_ptr<TCPPacket> ptcppacket(new TCPPacket);
-			ptcppacket->body = szInput;
-			ptcppacket->pack(cmd);
+			ptcppacket->pack_packet(szInput, cmd);
 			send(socketClient, ptcppacket->data.c_str(), ptcppacket->data.length(), 0);
 		}
 		//        printf("\n");
@@ -135,7 +134,7 @@ void Recv()
 	{
 
 		printf("Recv Form Server alllen[%d] cmd[%d] bodylen[%d] msg[%s]\n\n", recv(socketClient, g_szBuf, sizeof(g_szBuf), 0), 
-			reinterpret_cast<Pheader*>(g_szBuf)->cmd, reinterpret_cast<Pheader*>(g_szBuf)->length, g_szBuf + sizeof(Pheader));
+			reinterpret_cast<TCPHeader*>(g_szBuf)->cmd, reinterpret_cast<TCPHeader*>(g_szBuf)->length, g_szBuf + sizeof(TCPHeader));
 		printf("Me Recv Form Server:%s\n", g_szBuf);
 
 
@@ -149,7 +148,7 @@ DWORD WINAPI ThreadProc(_In_ LPVOID lpParameter)
 	{
 		WaitForSingleObject(hMutex, INFINITE);
 		printf("Recv Form Server alllen[%d] cmd[%d] bodylen[%d] msg[%s]\n\n", recv(socketClient, g_szBuf, sizeof(g_szBuf), 0),
-			reinterpret_cast<Pheader*>(g_szBuf)->cmd, reinterpret_cast<Pheader*>(g_szBuf)->length, g_szBuf + sizeof(Pheader));
+			reinterpret_cast<TCPHeader*>(g_szBuf)->cmd, reinterpret_cast<TCPHeader*>(g_szBuf)->length, g_szBuf + sizeof(TCPHeader));
 		ReleaseMutex(hMutex);
 	}
 
@@ -173,8 +172,7 @@ DWORD WINAPI SendDataThreadProc(_In_ LPVOID lpParameter)
 		else
 		{
 			std::shared_ptr<TCPPacket> ptcppacket(new TCPPacket);
-			ptcppacket->body = szInput;
-			ptcppacket->pack(cmd);
+			ptcppacket->pack_packet(szInput, cmd);
 			send(socketClient, ptcppacket->data.c_str(), ptcppacket->data.length(), 0);
 
 		}

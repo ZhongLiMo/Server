@@ -3,7 +3,6 @@
 
 #include <string>
 
-
 enum LOG_LEVEL
 {
 	LOG_LEVEL_FATAL = 0,
@@ -43,6 +42,5 @@ private:
 	LOG_LEVEL			m_log_level;
 	char				m_format_buf[102400];
 };
-
 
 #endif // !MYLOG_H
