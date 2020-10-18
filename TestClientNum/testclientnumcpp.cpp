@@ -111,16 +111,12 @@ void Input()
 		char szInput[256] = "";
 		printf("Me: cmd mg\n");
 		unsigned int cmd = 0;
-		scanf("%d %[^\n]", &cmd, szInput);
-		if (strcmp(szInput, "exit") == 0)
+		std::shared_ptr<TCPPacket> ptcppacket(new TCPPacket);
+		ptcppacket->pack_packet("Äþ½Ü±ëeat shit", 666);
+		while (1)
 		{
-			break;
-		}
-		else
-		{
-			std::shared_ptr<TCPPacket> ptcppacket(new TCPPacket);
-			ptcppacket->pack_packet(szInput, cmd);
 			send(socketClient, ptcppacket->data.c_str(), static_cast<int>(ptcppacket->data.length()), 0);
+			Sleep(1000);
 		}
 		//        printf("\n");
 		ReleaseMutex(hMutex);
@@ -133,7 +129,7 @@ void Recv()
 	while (true)
 	{
 
-		printf("Recv Form Server alllen[%d] cmd[%d] bodylen[%d] msg[%s]\n\n", recv(socketClient, g_szBuf, sizeof(g_szBuf), 0), 
+		printf("Recv Form Server alllen[%d] cmd[%d] bodylen[%d] msg[%s]\n\n", recv(socketClient, g_szBuf, sizeof(g_szBuf), 0),
 			reinterpret_cast<TCPHeader*>(g_szBuf)->cmd, reinterpret_cast<TCPHeader*>(g_szBuf)->length, g_szBuf + sizeof(TCPHeader));
 		printf("Me Recv Form Server:%s\n", g_szBuf);
 
@@ -173,8 +169,11 @@ DWORD WINAPI SendDataThreadProc(_In_ LPVOID lpParameter)
 		{
 			std::shared_ptr<TCPPacket> ptcppacket(new TCPPacket);
 			ptcppacket->pack_packet(szInput, cmd);
-			send(socketClient, ptcppacket->data.c_str(), static_cast<int>(ptcppacket->data.length()), 0);
-
+			while (1)
+			{
+				send(socketClient, ptcppacket->data.c_str(), static_cast<int>(ptcppacket->data.length()), 0);
+				Sleep(100);
+			}
 		}
 		printf("\n");
 		ReleaseMutex(hMutex);

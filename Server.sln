@@ -8,6 +8,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LoginServer", "LoginServer\LoginServer.vcxproj", "{89481A48-1291-4016-8201-D7A1CC2367B0}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GameMain", "GameMain\GameMain.vcxproj", "{DECA4D21-69FE-4F1E-BB49-653694012060}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E473E446-5F16-4266-8674-CC33256C6E42} = {E473E446-5F16-4266-8674-CC33256C6E42}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GameServer", "GameServer\GameServer.vcxproj", "{3E0CC2B0-F93B-427B-BB3C-ACB616DECC21}"
 EndProject
@@ -26,6 +29,14 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommonBase", "CommonBase\CommonBase.vcxproj", "{E473E446-5F16-4266-8674-CC33256C6E42}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClient", "TestClient\TestClient.vcxproj", "{A41518B4-ECCB-422F-83B5-3E65BD742281}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E473E446-5F16-4266-8674-CC33256C6E42} = {E473E446-5F16-4266-8674-CC33256C6E42}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClientNum", "TestClientNum\TestClientNum.vcxproj", "{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E473E446-5F16-4266-8674-CC33256C6E42} = {E473E446-5F16-4266-8674-CC33256C6E42}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -122,6 +133,14 @@ Global
 		{A41518B4-ECCB-422F-83B5-3E65BD742281}.Release|x64.Build.0 = Release|x64
 		{A41518B4-ECCB-422F-83B5-3E65BD742281}.Release|x86.ActiveCfg = Release|Win32
 		{A41518B4-ECCB-422F-83B5-3E65BD742281}.Release|x86.Build.0 = Release|Win32
+		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Debug|x64.ActiveCfg = Debug|x64
+		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Debug|x64.Build.0 = Debug|x64
+		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Debug|x86.ActiveCfg = Debug|Win32
+		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Debug|x86.Build.0 = Debug|Win32
+		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Release|x64.ActiveCfg = Release|x64
+		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Release|x64.Build.0 = Release|x64
+		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Release|x86.ActiveCfg = Release|Win32
+		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

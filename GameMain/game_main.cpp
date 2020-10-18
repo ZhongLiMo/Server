@@ -14,7 +14,7 @@ MyLog tcplog("TCPServer", "../log");
 
 int main()
 {
-	TCPServer server;
+	TCPServer::GetInstance()->StartServer();
 
 	MyLog molog("GameMain", "../log");
 	molog.SaveLog(LOG_DEBUG, "%s³Ô%s", "ning", "shi");

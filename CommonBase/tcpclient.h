@@ -1,8 +1,8 @@
 #ifndef TCP_CLIENT_H
 #define TCP_CLIENT_H
 
-#include <WS2tcpip.h>
 #include <string>
+#include <WS2tcpip.h>
 
 #include "tcppacket.h"
 
@@ -11,9 +11,10 @@ class TCPClient
 public:
 	TCPClient(const SOCKET& socket, const std::string& ip);
 	virtual ~TCPClient();
-	void OnRecvData(std::shared_ptr<TCPPacket> ptcppacket);
-	void SendMsg(std::shared_ptr<TCPPacket> ptcppacket);
+public:
 	const std::string& GetIP() const { return m_ip; };
+	void SendMsg(std::shared_ptr<TCPPacket> ptcppacket);
+	void OnRecvData(std::shared_ptr<TCPPacket> ptcppacket);
 private:
 	void OnConnected();
 	void OnDisconnected();
