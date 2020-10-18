@@ -28,9 +28,13 @@ TCPServer::~TCPServer()
 }
 void TCPServer::StartServer(int port)
 {
-	m_port = port;
-	bind_and_listen();
-	start_cond.notify_all();
+	static std::once_flag once;
+	std::call_once(once, [&]
+	{
+		m_port = port;
+		bind_and_listen();
+		start_cond.notify_all();
+	});
 }
 void TCPServer::bind_and_listen()
 {
@@ -146,9 +150,12 @@ int TCPServer::cur_client_num()
 }
 void TCPServer::CloseServer()
 {
-	close_flag = true;
-	accept_thread.join();
-	recvmsg_thread.join();
+	if (!close_flag)
+	{
+		close_flag = true;
+		accept_thread.join();
+		recvmsg_thread.join();
+	}
 }
 void TCPServer::AcceptThread()
 {
