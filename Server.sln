@@ -38,6 +38,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestClientNum", "TestClient
 		{E473E446-5F16-4266-8674-CC33256C6E42} = {E473E446-5F16-4266-8674-CC33256C6E42}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "设计模式", "设计模式\设计模式.vcxproj", "{D541FFB8-6075-4FC9-BDB3-CA3E754BFB6D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -141,6 +143,13 @@ Global
 		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Release|x64.Build.0 = Release|x64
 		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Release|x86.ActiveCfg = Release|Win32
 		{DF2B0A4C-6B56-478C-AB1C-91E27C491EC2}.Release|x86.Build.0 = Release|Win32
+		{D541FFB8-6075-4FC9-BDB3-CA3E754BFB6D}.Debug|x64.ActiveCfg = Debug|x64
+		{D541FFB8-6075-4FC9-BDB3-CA3E754BFB6D}.Debug|x86.ActiveCfg = Debug|Win32
+		{D541FFB8-6075-4FC9-BDB3-CA3E754BFB6D}.Debug|x86.Build.0 = Debug|Win32
+		{D541FFB8-6075-4FC9-BDB3-CA3E754BFB6D}.Release|x64.ActiveCfg = Release|x64
+		{D541FFB8-6075-4FC9-BDB3-CA3E754BFB6D}.Release|x64.Build.0 = Release|x64
+		{D541FFB8-6075-4FC9-BDB3-CA3E754BFB6D}.Release|x86.ActiveCfg = Release|Win32
+		{D541FFB8-6075-4FC9-BDB3-CA3E754BFB6D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
