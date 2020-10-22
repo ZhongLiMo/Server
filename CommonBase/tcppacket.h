@@ -27,7 +27,7 @@ public:
 	int pack_packet(const std::string& b, unsigned int cmd = 0, unsigned int uid = 0, short ver = 0);
 	static std::shared_ptr<TCPPacket> CreateNew() { return std::shared_ptr<TCPPacket>(new TCPPacket); }
 public:
-	TCPHeader header;
+	TCPHeader	header;
 	std::string body;
 	std::string data;
 };

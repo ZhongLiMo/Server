@@ -1,39 +1,13 @@
 #include "timer.h"
-
 #include "basefunc.h"
 
-static const int DEAFULT_TIMER_STAMP_MS = 1;
+static const int DEAFULT_TIMER_STAMP_MS = 10;
 
-TimerManager::TimerManager() : next_time(0), timer_iter(listeners.end()), need_change_iter(true)
+TimerManager::TimerManager() : next_time(0), change_iter(true), listeners(), timer_iter(listeners.end())
 {
-
 }
 TimerManager::~TimerManager()
 {
-
-}
-void TimerManager::RegisterTimer(Timer* timer)
-{
-	if (!timer) return;
-	if (listeners.find(timer) == listeners.end()) 
-		listeners.insert(timer);
-}
-void TimerManager::RemoveTimer(Timer* timer)
-{
-	if (!timer) return;
-	std::set<Timer*>::iterator ite = listeners.find(timer);
-	if (ite != listeners.end())
-	{
-		if (ite == timer_iter)
-		{
-			need_change_iter = false;
-			timer_iter = listeners.erase(ite);
-		}
-		else
-		{
-			listeners.erase(ite);
-		}
-	}
 }
 void TimerManager::OnTimer()
 {
@@ -46,40 +20,67 @@ void TimerManager::OnTimer()
 			if ((*timer_iter)->next_time < cur_time)
 			{
 				(*timer_iter)->task();
-				(*timer_iter)->next_time = cur_time + (*timer_iter)->loop_time;
-				if (!(*timer_iter)->loop)
+				if ((*timer_iter)->loop_time)
+				{
+					(*timer_iter)->next_time = cur_time + (*timer_iter)->loop_time;
+				}
+				else
 				{
 					RemoveTimer(*timer_iter);
 				}
 			}
-			if (need_change_iter)
+			if (change_iter)
 			{
 				++timer_iter;
 			}
 			else
 			{
-				need_change_iter = true;
+				change_iter = true;
 			}
 		}
 	}
+}
+void TimerManager::RemoveTimer(Timer* timer)
+{
+	if (!timer) return;
+	std::set<Timer*>::iterator ite = listeners.find(timer);
+	if (ite != listeners.end())
+	{
+		if (ite == timer_iter)
+		{
+			change_iter = false;
+			timer_iter = listeners.erase(ite);
+		}
+		else
+		{
+			listeners.erase(ite);
+		}
+	}
+}
+void TimerManager::RegisterTimer(Timer* timer)
+{
+	if (!timer) return;
+	if (listeners.find(timer) == listeners.end()) 
+		listeners.insert(timer);
 }
 
 Timer::~Timer()
 {
 	timer_manager.RemoveTimer(this);
 }
-void Timer::StartTimer(int ms, bool loop)
-{
-	timer_manager.RemoveTimer(this);
-	this->loop = loop;
-	this->loop_time = ms;
-	next_time = BASE_FUNC::GetCurTimeMS() + loop_time;
-	if (this->loop_time > 0)
-	{
-		timer_manager.RegisterTimer(this);
-	}
-}
 void Timer::StopTimer()
 {
 	timer_manager.RemoveTimer(this);
+}
+void Timer::StartTimer(int delay_time, bool loop)
+{
+	timer_manager.RemoveTimer(this);
+	if (delay_time < 0) return;
+	loop_time = loop ? delay_time : 0;
+	next_time = BASE_FUNC::GetCurTimeMS() + delay_time;
+	timer_manager.RegisterTimer(this);
+}
+void Timer::RestartTimer(int delay_time, bool loop)
+{
+	StartTimer(delay_time, loop);
 }

@@ -1,8 +1,8 @@
 #ifndef TCP_CLIENT_H
 #define TCP_CLIENT_H
 
-#include <string>
 #include <WS2tcpip.h>
+#include <string>
 
 #include "tcppacket.h"
 

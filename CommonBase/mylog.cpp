@@ -1,8 +1,6 @@
 #include "mylog.h"
-
 #include <ctime>
 #include <stdarg.h>
-
 #include "basefunc.h"
 
 static const std::string log_level_str[6] = { "fatal", "error", "warn " , "info " ,"proto", "debug" };

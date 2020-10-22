@@ -1,5 +1,4 @@
 #include "tcpserver.h"
-
 #include "mylog.h"
 #include "tcppacket.h"
 
@@ -35,6 +34,14 @@ void TCPServer::StartServer(int port)
 		bind_and_listen();
 		start_cond.notify_all();
 	});
+}
+TimerManager& TCPServer::GetTimerManager()
+{
+	return m_timer_manager;
+}
+int TCPServer::cur_client_num()
+{
+	return m_client_set.fd_count;
 }
 void TCPServer::bind_and_listen()
 {
@@ -144,10 +151,6 @@ void TCPServer::set_socket(SOCKET& socket, bool is_server)
 		}
 	}
 }
-int TCPServer::cur_client_num()
-{
-	return m_client_set.fd_count;
-}
 void TCPServer::CloseServer()
 {
 	if (!close_flag)
@@ -206,6 +209,7 @@ void TCPServer::RecvmsgThread()
 	char read_buf[1024 * 100];
 	while (!close_flag)
 	{
+		m_timer_manager.OnTimer();
 		accept_mtx.lock();
 		if (!accecpt_client.empty())
 		{
@@ -244,17 +248,20 @@ void TCPServer::RecvmsgThread()
 					++i;
 					continue;
 				}
+
 				cur_read_len = 0;
 				memset(pheader, 0, TCP_HEAD_LEN);
 				memset(read_buf, 0, sizeof(read_buf));
+
 				while (true)
 				{
 					if (cur_read_len < TCP_HEAD_LEN) result = recv(socket, pheader, TCP_HEAD_LEN - cur_read_len, 0);
 					else if (cur_read_len == TCP_HEAD_LEN && reinterpret_cast<TCPHeader*>(pheader)->length == 0) goto ON_RECV_MSG;
 					else result = recv(socket, read_buf, sizeof(read_buf) - cur_read_len - TCP_HEAD_LEN, 0);
+
 					if (result == SOCKET_ERROR)
 					{
-						if (errno == EAGAIN || errno == EINPROGRESS || errno == EINTR || errno == EWOULDBLOCK)
+						if (errno == EAGAIN  || errno == EINTR || errno == EINPROGRESS || errno == EWOULDBLOCK)
 						{
 							++i;
 							tcplog.SaveLog(LOG_WARN, "recv() error.");

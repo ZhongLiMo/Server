@@ -1,25 +1,24 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include <functional>
 #include <set>
-
-
+#include <functional>
 
 class Timer;
 class TimerManager
 {
 public:
 	TimerManager();
-	~TimerManager();
-	void RegisterTimer(Timer* timer);
-	void RemoveTimer(Timer* timer);
+	virtual ~TimerManager();
+public:
 	void OnTimer();
+	void RemoveTimer(Timer* timer);
+	void RegisterTimer(Timer* timer);
 private:
-	std::set<Timer*> listeners;
-	time_t next_time;
-	bool need_change_iter;
-	std::set<Timer*>::iterator timer_iter;
+	time_t						next_time;
+	bool						change_iter;
+	std::set<Timer*>			listeners;
+	std::set<Timer*>::iterator	timer_iter;
 };
 
 class Timer
@@ -28,22 +27,17 @@ public:
 	template<typename callback, typename... arguments>
 	Timer(TimerManager& timer_manager, callback&& fun, arguments&&... args) :
 		task(std::bind(std::forward<callback>(fun), std::forward<arguments>(args)...)),
-		next_time(0), timer_manager(timer_manager), loop(false), loop_time(0)
-	{
-
-	}
-	~Timer();
-	void StartTimer(int ms, bool loop = false);
+		next_time(0), timer_manager(timer_manager), loop_time(0) {}
+	virtual ~Timer();
 	void StopTimer();
+	void StartTimer(int delay_time, bool loop = false);
+	void RestartTimer(int delay_time, bool loop = false);
 private:
-	std::function<void()> task;
-	bool loop;
-	int loop_time;
-	time_t next_time;
-	TimerManager& timer_manager;
+	int						loop_time;
+	time_t					next_time;
+	TimerManager&			timer_manager;
+	std::function<void()>	task;
 	friend class TimerManager;
 };
-
-
 
 #endif // !TIMER_H

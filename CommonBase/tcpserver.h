@@ -3,50 +3,55 @@
 
 #define FD_SETSIZE 1024
 
-#include <map>
-#include <memory>
 #include <WS2tcpip.h>
 #pragma comment(lib,"ws2_32.lib")
+
+#include <map>
+#include <memory>
 #include <thread>
 #include <mutex>
 #include <atomic>
 #include <condition_variable>
 
+#include "timer.h"
 #include "tcpclient.h"
 
+#define TCP_THREAD_TIMER_MANAGER TCPServer::GetInstance()->GetTimerManager()
 
 class TCPServer
 {
 public:
 	static TCPServer* GetInstance();
 	void StartServer(int port = 8000);
+	TimerManager& GetTimerManager();
 private:
 	TCPServer();
 	virtual ~TCPServer();
 	TCPServer(const TCPServer&) = delete;
 private:
-	void bind_and_listen();
 	int cur_client_num();
+	void bind_and_listen();
 	SOCKET get_socket(bool is_server = false);
 	void set_socket(SOCKET& socket, bool is_server = false);
 private:
-	int		m_port;
-	SOCKET  m_socket;
-	fd_set m_client_set;
-	std::map<SOCKET, std::shared_ptr<TCPClient>> m_client_map;
+	int												m_port;
+	SOCKET											m_socket;
+	fd_set											m_client_set;
+	TimerManager									m_timer_manager;
+	std::map<SOCKET, std::shared_ptr<TCPClient>>	m_client_map;
 private:
 	void CloseServer();
 	void AcceptThread();
 	void RecvmsgThread();
 private:
-	std::mutex start_mtx;
-	std::mutex accept_mtx;
-	std::atomic_bool close_flag;
-	std::condition_variable_any start_cond;
-	std::map<SOCKET, std::shared_ptr<TCPClient>> accecpt_client;
+	std::mutex										start_mtx;
+	std::mutex										accept_mtx;
+	std::atomic_bool								close_flag;
+	std::condition_variable_any						start_cond;
+	std::map<SOCKET, std::shared_ptr<TCPClient>>	accecpt_client;
 private:
-	std::thread accept_thread;
-	std::thread recvmsg_thread;
+	std::thread										accept_thread;
+	std::thread										recvmsg_thread;
 };
 
 #endif // !TCP_SERVER_H
