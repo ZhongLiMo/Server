@@ -41,11 +41,12 @@ private:
 private:
 	std::mutex start_mtx;
 	std::mutex accept_mtx;
-	std::thread accept_thread;
-	std::thread recvmsg_thread;
 	std::atomic<bool> close_flag;
 	std::condition_variable_any start_cond;
 	std::map<SOCKET, std::shared_ptr<TCPClient>> accecpt_client;
+private:
+	std::thread accept_thread;
+	std::thread recvmsg_thread;
 };
 
 #endif // !TCP_SERVER_H

@@ -7,9 +7,10 @@
 namespace BASE_FUNC
 {
 	tm		GetCurTmTime();
-	int		GetCurTimeMS();
+	int		GetCurMS();
+	time_t	GetCurTimestamp();
+	time_t	GetCurTimeMS();
 	bool	CreateDirectory(const std::string& file_dir);
-
 
 
 }

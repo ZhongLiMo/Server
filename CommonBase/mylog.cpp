@@ -32,7 +32,7 @@ void MyLog::SaveLog(LOG_LEVEL log_level, int line, const char *func, const char 
 	struct tm cur_time = BASE_FUNC::GetCurTmTime();
 	int len = snprintf(m_format_buf, sizeof(m_format_buf), "[%s][%04d-%02d-%02d %02d:%02d:%02d.%3d] line[%d] func[%s] ",
 		log_level_str[log_level].c_str(), cur_time.tm_year + 1900, cur_time.tm_mon + 1, cur_time.tm_mday, 
-		cur_time.tm_hour, cur_time.tm_min, cur_time.tm_sec, BASE_FUNC::GetCurTimeMS(), line, func);
+		cur_time.tm_hour, cur_time.tm_min, cur_time.tm_sec, BASE_FUNC::GetCurMS(), line, func);
 	va_list argptr;
 	va_start(argptr, format);
 	len += vsprintf_s(m_format_buf + len, sizeof(m_format_buf) - len, format, argptr);

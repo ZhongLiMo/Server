@@ -130,6 +130,7 @@
     <ClCompile Include="tcpclient.cpp" />
     <ClCompile Include="tcppacket.cpp" />
     <ClCompile Include="tcpserver.cpp" />
+    <ClCompile Include="timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basefunc.h" />
@@ -137,6 +138,7 @@
     <ClInclude Include="tcpclient.h" />
     <ClInclude Include="tcppacket.h" />
     <ClInclude Include="tcpserver.h" />
+    <ClInclude Include="timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
