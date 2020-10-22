@@ -41,7 +41,6 @@ private:
 private:
 	std::mutex start_mtx;
 	std::mutex accept_mtx;
-	std::thread recvmsg_thread;
 	std::atomic_bool close_flag;
 	std::condition_variable_any start_cond;
 	std::map<SOCKET, std::shared_ptr<TCPClient>> accecpt_client;
