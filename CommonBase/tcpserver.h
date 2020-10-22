@@ -43,7 +43,7 @@ private:
 	std::mutex accept_mtx;
 	std::thread accept_thread;
 	std::thread recvmsg_thread;
-	std::atomic<bool> close_flag;
+	std::atomic_bool close_flag;
 	std::condition_variable_any start_cond;
 	std::map<SOCKET, std::shared_ptr<TCPClient>> accecpt_client;
 };
