@@ -24,6 +24,9 @@
     <ClCompile Include="tcppacket.cpp">
       <Filter>tcpnet</Filter>
     </ClCompile>
+    <ClCompile Include="timer.cpp">
+      <Filter>code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basefunc.h">
@@ -40,6 +43,9 @@
     </ClInclude>
     <ClInclude Include="tcppacket.h">
       <Filter>tcpnet</Filter>
+    </ClInclude>
+    <ClInclude Include="timer.h">
+      <Filter>code</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

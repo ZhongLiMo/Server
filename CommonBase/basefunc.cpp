@@ -18,9 +18,19 @@ namespace BASE_FUNC
 		return *localtime(&cur_time);
 	}
 
-	int GetCurTimeMS()
+	int GetCurMS()
 	{
 		return static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() % 1000);
+	}
+
+	time_t GetCurTimestamp()
+	{
+		return time(NULL);
+	}
+
+	time_t	GetCurTimeMS()
+	{
+		return time(NULL) * 1000 + GetCurMS();
 	}
 
 	bool CreateDirectory(const std::string& file_dir)
