@@ -207,6 +207,9 @@ void TCPServer::RecvmsgThread()
 	int cur_read_len = 0;
 	char pheader[TCP_HEAD_LEN];
 	char read_buf[1024 * 100];
+	struct timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
 	while (!close_flag)
 	{
 		m_timer_manager.OnTimer();
@@ -224,7 +227,7 @@ void TCPServer::RecvmsgThread()
 		if (!m_client_set.fd_count) continue;
 		tcplog.SaveLog(LOG_INFO, "recvmsgThread cur client num[%d]", cur_client_num());
 		read_set = m_client_set;
-		int result = select(10000, &read_set, NULL, NULL, NULL);
+		int result = select(10000, &read_set, NULL, NULL, &timeout);
 		if (result == SOCKET_ERROR)
 		{
 			tcplog.SaveLog(LOG_ERROR, "select() error.");

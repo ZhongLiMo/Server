@@ -12,6 +12,7 @@ public:
 	virtual ~TimerManager();
 public:
 	void OnTimer();
+private:
 	void RemoveTimer(Timer* timer);
 	void RegisterTimer(Timer* timer);
 private:
@@ -19,6 +20,7 @@ private:
 	bool						change_iter;
 	std::set<Timer*>			listeners;
 	std::set<Timer*>::iterator	timer_iter;
+	friend class Timer;
 };
 
 class Timer
@@ -29,6 +31,7 @@ public:
 		task(std::bind(std::forward<callback>(fun), std::forward<arguments>(args)...)),
 		next_time(0), timer_manager(timer_manager), loop_time(0) {}
 	virtual ~Timer();
+public:
 	void StopTimer();
 	void StartTimer(int delay_time, bool loop = false);
 	void RestartTimer(int delay_time, bool loop = false);
