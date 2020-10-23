@@ -13,7 +13,7 @@ TCPServer::TCPServer() : accept_thread(&TCPServer::AcceptThread, this), recvmsg_
 {
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData)) tcplog.SaveLog(LOG_FATAL, "WSAStartup() error.");
-	m_socket = get_socket(true);
+	m_socket = get_server_socket();
 }
 TCPServer::~TCPServer()
 {
@@ -64,23 +64,15 @@ void TCPServer::bind_and_listen()
 	}
 	tcplog.SaveLog(LOG_INFO, "Server start OK! listen port:%d.", m_port);
 }
-SOCKET TCPServer::get_socket(bool is_server)
+SOCKET TCPServer::get_server_socket()
 {
 	SOCKET socket = ::socket(AF_INET, SOCK_STREAM, 0);
 	if (socket == INVALID_SOCKET)
 	{
-		if (is_server)
-		{
-			WSACleanup();
-			tcplog.SaveLog(LOG_FATAL, "socket() failed error[%d].", WSAGetLastError());
-		}
-		else
-		{
-			tcplog.SaveLog(LOG_ERROR, "socket() failed error[%d].", WSAGetLastError());
-			return INVALID_SOCKET;
-		}
+		WSACleanup();
+		tcplog.SaveLog(LOG_FATAL, "socket() failed error[%d].", WSAGetLastError());
 	}
-	set_socket(socket, is_server);
+	set_socket(socket, true);
 	return socket;
 }
 void TCPServer::set_socket(SOCKET& socket, bool is_server)

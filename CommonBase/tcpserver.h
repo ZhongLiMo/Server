@@ -31,7 +31,7 @@ private:
 private:
 	int cur_client_num();
 	void bind_and_listen();
-	SOCKET get_socket(bool is_server = false);
+	SOCKET get_server_socket();
 	void set_socket(SOCKET& socket, bool is_server = false);
 private:
 	int												m_port;

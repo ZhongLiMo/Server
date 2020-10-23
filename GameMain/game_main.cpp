@@ -27,7 +27,7 @@ public:
 
 int main()
 {
-	TCPServer::GetInstance()->StartServer();
+	//TCPServer::GetInstance()->StartServer();
 
 	//MyLog molog("GameMain", "../log");
 	//molog.SaveLog(LOG_DEBUG, "%s³Ô%s", "ning", "shi");
