@@ -2,6 +2,7 @@
 #define TCP_CLIENT_H
 
 #include <WS2tcpip.h>
+
 #include <string>
 
 #include "tcppacket.h"
