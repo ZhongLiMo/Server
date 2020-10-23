@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="享元模式.cpp" />
     <ClCompile Include="单例模式(Singleton Pattern).cpp" />
     <ClCompile Include="原型模式(Prototype Pattern).cpp" />
     <ClCompile Include="工厂模式(Factory Pattern).cpp" />
