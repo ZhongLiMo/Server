@@ -47,5 +47,8 @@
     <ClInclude Include="timer.h">
       <Filter>code</Filter>
     </ClInclude>
+    <ClInclude Include="mysqldb.hpp">
+      <Filter>code</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

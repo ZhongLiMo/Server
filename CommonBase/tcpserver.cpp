@@ -18,12 +18,6 @@ TCPServer::TCPServer() : accept_thread(&TCPServer::AcceptThread, this), recvmsg_
 TCPServer::~TCPServer()
 {
 	CloseServer();
-	for (u_int i = 0; i < m_client_set.fd_count; ++i)
-	{
-		closesocket(m_client_set.fd_array[i]);
-	}
-	closesocket(m_socket);
-	WSACleanup();
 }
 void TCPServer::StartServer(int port)
 {
@@ -150,6 +144,12 @@ void TCPServer::CloseServer()
 		close_flag = true;
 		accept_thread.join();
 		recvmsg_thread.join();
+		for (u_int i = 0; i < m_client_set.fd_count; ++i)
+		{
+			closesocket(m_client_set.fd_array[i]);
+		}
+		closesocket(m_socket);
+		WSACleanup();
 	}
 }
 void TCPServer::AcceptThread()
@@ -181,7 +181,7 @@ void TCPServer::AcceptThread()
 			}
 			else
 			{
-				std::shared_ptr<TCPClient> pp(new TCPClient(clientSocket, inet_ntoa(clientAddr.sin_addr)));
+				TCPClient* pp(new TCPClient(clientSocket, inet_ntoa(clientAddr.sin_addr)));
 				tcplog.SaveLog(LOG_INFO, "new client login IP(%s).", pp->GetIP().c_str());
 				accept_mtx.lock();
 				accecpt_client.insert(std::make_pair(clientSocket, pp));
@@ -208,7 +208,7 @@ void TCPServer::RecvmsgThread()
 		accept_mtx.lock();
 		if (!accecpt_client.empty())
 		{
-			for (std::map<SOCKET, std::shared_ptr<TCPClient>>::iterator ite = accecpt_client.begin(); ite != accecpt_client.end(); ++ite)
+			for (std::map<SOCKET, TCPClient*>::iterator ite = accecpt_client.begin(); ite != accecpt_client.end(); ++ite)
 			{
 				FD_SET(ite->first, &m_client_set);
 			}
@@ -267,6 +267,7 @@ void TCPServer::RecvmsgThread()
 						else tcplog.SaveLog(LOG_INFO, "recv() error.");
 						closesocket(socket);
 						FD_CLR(socket, &m_client_set);
+						delete m_client_map[socket];
 						m_client_map.erase(socket);
 						break;
 					}
@@ -274,6 +275,7 @@ void TCPServer::RecvmsgThread()
 					{
 						closesocket(socket);
 						FD_CLR(socket, &m_client_set);
+						delete m_client_map[socket];
 						m_client_map.erase(socket);
 						break;
 					}
@@ -293,6 +295,7 @@ void TCPServer::RecvmsgThread()
 							{
 								closesocket(socket);
 								FD_CLR(socket, &m_client_set);
+								delete m_client_map[socket];
 								m_client_map.erase(socket);
 								tcplog.SaveLog(LOG_ERROR, "client send length not right.");
 							}

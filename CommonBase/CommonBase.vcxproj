@@ -89,12 +89,14 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;MYDEBUG_ON</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\include\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
     </Link>
     <Lib>
-      <AdditionalDependencies>ws2_32.lib</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;libmysql.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../lib/</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -138,6 +140,7 @@
   <ItemGroup>
     <ClInclude Include="basefunc.h" />
     <ClInclude Include="mylog.h" />
+    <ClInclude Include="mysqldb.hpp" />
     <ClInclude Include="tcpclient.h" />
     <ClInclude Include="tcppacket.h" />
     <ClInclude Include="tcpserver.h" />

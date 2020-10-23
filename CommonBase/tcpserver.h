@@ -6,7 +6,6 @@
 #include <WS2tcpip.h>
 
 #include <map>
-#include <memory>
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -37,7 +36,7 @@ private:
 	SOCKET											m_socket;
 	fd_set											m_client_set;
 	TimerManager									m_timer_manager;
-	std::map<SOCKET, std::shared_ptr<TCPClient>>	m_client_map;
+	std::map<SOCKET, TCPClient*>					m_client_map;
 private:
 	void CloseServer();
 	void AcceptThread();
@@ -47,7 +46,7 @@ private:
 	std::mutex										accept_mtx;
 	std::atomic_bool								close_flag;
 	std::condition_variable_any						start_cond;
-	std::map<SOCKET, std::shared_ptr<TCPClient>>	accecpt_client;
+	std::map<SOCKET, TCPClient*>					accecpt_client;
 private:
 	std::thread										accept_thread;
 	std::thread										recvmsg_thread;
