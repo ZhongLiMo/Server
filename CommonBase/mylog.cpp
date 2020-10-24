@@ -26,6 +26,7 @@ MyLog::~MyLog()
 void MyLog::SaveLog(LOG_LEVEL log_level, int line, const char *func, const char *format, ...)
 {
 	if (log_level > m_log_level) return;
+	memset(m_format_buf, 0, sizeof(m_format_buf));
 	struct tm cur_time = BASE_FUNC::GetCurTmTime();
 	int len = snprintf(m_format_buf, sizeof(m_format_buf), "[%s][%04d-%02d-%02d %02d:%02d:%02d.%3d] line[%d] func[%s] ",
 		log_level_str[log_level].c_str(), cur_time.tm_year + 1900, cur_time.tm_mon + 1, cur_time.tm_mday, 
