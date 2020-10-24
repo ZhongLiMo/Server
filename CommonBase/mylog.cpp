@@ -1,5 +1,4 @@
 #include "mylog.h"
-#include <ctime>
 #include <stdarg.h>
 #include "basefunc.h"
 

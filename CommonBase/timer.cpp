@@ -60,8 +60,13 @@ void TimerManager::RemoveTimer(Timer* timer)
 void TimerManager::RegisterTimer(Timer* timer)
 {
 	if (!timer) return;
-	if (listeners.find(timer) == listeners.end()) 
+	if (listeners.find(timer) == listeners.end())
+	{
+		bool change = timer_iter == listeners.end();
 		listeners.insert(timer);
+		if (change)
+			timer_iter = listeners.end();
+	}
 }
 
 Timer::~Timer()

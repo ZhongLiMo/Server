@@ -50,5 +50,8 @@
     <ClInclude Include="mysqldb.hpp">
       <Filter>code</Filter>
     </ClInclude>
+    <ClInclude Include="cost_time.hpp">
+      <Filter>code</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

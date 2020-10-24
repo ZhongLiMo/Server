@@ -4,11 +4,6 @@
 
 extern MyLog tcplog;
 
-TCPServer* TCPServer::GetInstance()
-{
-	static TCPServer tcpserver;
-	return &tcpserver;
-}
 TCPServer::TCPServer() : accept_thread(&TCPServer::AcceptThread, this), recvmsg_thread(&TCPServer::RecvmsgThread, this)
 {
 	WSADATA wsaData;
@@ -28,10 +23,6 @@ void TCPServer::StartServer(int port)
 		bind_and_listen();
 		start_cond.notify_all();
 	});
-}
-TimerManager& TCPServer::GetTimerManager()
-{
-	return m_timer_manager;
 }
 int TCPServer::cur_client_num()
 {

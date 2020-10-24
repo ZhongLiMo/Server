@@ -19,9 +19,16 @@
 class TCPServer
 {
 public:
-	static TCPServer* GetInstance();
 	void StartServer(int port = 8000);
-	TimerManager& GetTimerManager();
+	static TCPServer* GetInstance()
+	{
+		static TCPServer tcpserver;
+		return &tcpserver;
+	}
+	TimerManager& GetTimerManager()
+	{
+		return m_timer_manager;
+	}
 private:
 	TCPServer();
 	virtual ~TCPServer();

@@ -5,8 +5,11 @@
 
 #include <string>
 #include <memory>
-#include <cassert>
 #include <unordered_map>
+#include <thread>
+#include <mutex>
+#include <atomic>
+#include <condition_variable>
 
 #include "mylog.h"
 extern MyLog mysqllog;
@@ -128,6 +131,7 @@ public:
 	void Connect(const char* host, const char* user, const char* passwd, const char* dbname, unsigned int port = MYSQL_PORT, const char* unixSocket = NULL, unsigned long clientFlag = 0);
 private:
 	void Close() { this->~MysqlDB(); }
+	bool Query(const std::string& strsql) const;
 	bool Query(const char(&strsql)[SQL_SIZE]) const;
 	template<typename RecordType>
 	void InitDefaultRecord(const char(&strsql)[SQL_SIZE], const RecordType& recordType);
@@ -137,12 +141,18 @@ private:
 	MysqlDB(const MysqlDB&) = delete;
 	MysqlDB& operator=(const MysqlDB&) = delete;
 private:
-	MYSQL*          m_mysql;
-	MYSQL_RES*      m_mysqlRes;
-	MYSQL_ROW       m_mysqlRow;
-	MYSQL_FIELD*    m_mysqlField;
+	MYSQL*						m_mysql;
+	MYSQL_RES*					m_mysqlRes;
+	MYSQL_ROW					m_mysqlRow;
+	MYSQL_FIELD*				m_mysqlField;
 	template<typename Index, Index size, const char* tableName>
 	friend class Record;
+private:
+	void StartModifyThread();
+	std::mutex					mysql_mtx;
+	std::list<std::string>		sql_list;
+	std::atomic_bool			close_flag;
+	std::condition_variable_any	start_cond;
 };
 
 Field::operator short()
@@ -541,6 +551,16 @@ typename std::unordered_map<Key, std::shared_ptr<RecordType>>::iterator RecordTa
 	return m_recordTable.end();
 }
 
+bool MysqlDB::Query(const std::string& strsql) const
+{
+	if (!m_mysql) mysqllog.SaveLog(LOG_FATAL, "mysql not connect");
+	if (mysql_query(m_mysql, strsql.c_str()))
+	{
+		mysqllog.SaveLog(LOG_ERROR, "sql(%s) query error(%s)", strsql.c_str(), mysql_error(m_mysql));
+		return false;
+	}
+	return true;
+}
 bool MysqlDB::Query(const char(&strsql)[SQL_SIZE]) const
 {
 	if (!m_mysql) mysqllog.SaveLog(LOG_FATAL, "mysql not connect");
@@ -611,6 +631,27 @@ void MysqlDB::Connect(const char* host, const char* user, const char* passwd, co
 			mysql_close(m_mysql);
 			m_mysql = NULL;
 			mysqllog.SaveLog(LOG_FATAL, "mysql connect error");
+		}
+		StartModifyThread();
+	});
+}
+void MysqlDB::StartModifyThread()
+{
+	static std::thread modify_thread([&]() 
+	{
+		while (!close_flag)
+		{
+			mysql_mtx.lock();
+			start_cond.wait(mysql_mtx, [&]()
+			{
+				return !sql_list.empty();
+			});
+			while (!sql_list.empty())
+			{
+				Query(sql_list.front());
+				sql_list.pop_front();
+			}
+			mysql_mtx.unlock();
 		}
 	});
 }
