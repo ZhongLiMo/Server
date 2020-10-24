@@ -140,6 +140,7 @@ void TCPServer::CloseServer()
 		{
 			closesocket(m_client_set.fd_array[i]);
 		}
+		FD_ZERO(&m_client_set);
 		closesocket(m_socket);
 		WSACleanup();
 		while (!m_client_map.empty())
