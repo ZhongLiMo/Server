@@ -15,7 +15,7 @@ public:
 public:
 	const std::string& GetIP() const { return m_ip; };
 	void SendMsg(std::shared_ptr<TCPPacket> ptcppacket);
-	void OnRecvData(std::shared_ptr<TCPPacket> ptcppacket);
+	bool OnRecvData(std::shared_ptr<TCPPacket> ptcppacket);
 private:
 	void OnConnected();
 	void OnDisconnected();

@@ -10,7 +10,7 @@ using namespace std::chrono;
 #include "tcpserver.h"
 #include "timer.h"
 #include "mysqldb.hpp"
-#include "cost_time.hpp"
+#include "costtime.hpp"
 
 MyLog tcplog("TCPServer", "../log");
 MyLog mysqllog("MYSQL", "../log");
@@ -33,7 +33,7 @@ public:
 	void test(int a)
 	{
 		n += a;
-		tcplog.SaveLog(LOG_DEBUG, "Test: %p n:%d" , this, n);
+		tcplog.SaveLog(LOG_DEBUG, "对象调用地址: %p n:%d" , this, n);
 	}
 	int n;
 };
@@ -48,23 +48,25 @@ int main()
 	{
 		TimerManager manager;
 		Test test;
-		tcplog.SaveLog(LOG_DEBUG, "Test true add: %p", &test);
-		Timer timer(manager, &Test::test, &test, 10);
+		tcplog.SaveLog(LOG_DEBUG, "对象真实地址: %p", &test);
+		Timer timer(manager, &Test::test, &test, 1);
 		//Timer timer(manager, [] {
 		//	cout << 10 << endl;
 		//});
-		timer.StartTimer(500, true);
+		timer.StartTimer(100, true);
 		int n = 0;
 		while (1)
 		{
 			n++;
 			manager.OnTimer();
-			if (n == 50000000)
+			if (n == 5000000)
 			{
 				timer.StopTimer();
+				return;
 			}
 		}
 	});
+	testthread.detach();
 
 	const char user[] = "root";
 	const char pswd[] = "123456";
@@ -82,7 +84,7 @@ int main()
 		std::cout << "after select" << std::endl;
 		{
 			CostTime costtime(tcplog, __LINE__, "DBHandle->Select");
-			DBHandle->Select(userTable, tableName, "id>1", "id", "DESC");
+			DBHandle->Select(userTable, tableName);
 		}
 		auto ite = userTable.begin();
 		for (; ite != userTable.end(); ++ite)
@@ -94,63 +96,63 @@ int main()
 			std::cout << std::endl;
 		}
 
-		////update
-		//if (userTable.begin() != userTable.end())
-		//{
-		//	auto userRecord = userTable.begin()->second;
-		//	userRecord->SetString(TEST_USER_NICKNAME, "Jack");
-		//	userRecord->Update();
-		//}
-		//std::cout << std::endl << "after update" << std::endl; ite = userTable.begin();
-		//for (; ite != userTable.end(); ++ite)
-		//{
-		//	for (unsigned int i = 0; i < (ite->second)->Size(); ++i)
-		//	{
-		//		std::cout << (*ite->second)[i] << "\t";
-		//	}
-		//	std::cout << std::endl;
-		//}
+		//update
+		if (userTable.begin() != userTable.end())
+		{
+			auto userRecord = userTable.begin()->second;
+			userRecord->SetString(TEST_USER_NICKNAME, "Jack");
+			userRecord->Update();
+		}
+		std::cout << std::endl << "after update" << std::endl; ite = userTable.begin();
+		for (; ite != userTable.end(); ++ite)
+		{
+			for (unsigned int i = 0; i < (ite->second)->Size(); ++i)
+			{
+				std::cout << (*ite->second)[i] << "\t";
+			}
+			std::cout << std::endl;
+		}
 
-		////delete
-		//Key key = 0;
-		//if (userTable.begin() != userTable.end())
-		//{
-		//	auto userRecord = userTable.begin()->second;
-		//	key = userRecord->GetKey();
-		//	userTable.DeleteRecord(key);
-		//}
-		//std::cout << std::endl << "after delete" << std::endl; ite = userTable.begin();
-		//for (; ite != userTable.end(); ++ite)
-		//{
-		//	for (unsigned int i = 0; i < (ite->second)->Size(); ++i)
-		//	{
-		//		std::cout << (*ite->second)[i] << "\t";
-		//	}
-		//	std::cout << std::endl;
-		//}
+		//delete
+		Key key = 0;
+		if (userTable.begin() != userTable.end())
+		{
+			auto userRecord = userTable.begin()->second;
+			key = userRecord->GetKey();
+			userTable.DeleteRecord(key);
+		}
+		std::cout << std::endl << "after delete" << std::endl; ite = userTable.begin();
+		for (; ite != userTable.end(); ++ite)
+		{
+			for (unsigned int i = 0; i < (ite->second)->Size(); ++i)
+			{
+				std::cout << (*ite->second)[i] << "\t";
+			}
+			std::cout << std::endl;
+		}
 
-		////insert
-		//if (key)
-		//{
-		//	auto userRecord = UserRecord::CreateNew(key);
-		//	userRecord->SetString(TEST_USER_NAME, "Libai");
-		//	userRecord->SetString(TEST_USER_NICKNAME, "XiaoBai");
-		//	userRecord->SetInt(TEST_USER_SEX, 1);
-		//	userTable.InsertRecord(userRecord);
-		//}
-		//std::cout << std::endl << "after insert" << std::endl; ite = userTable.begin();
-		//for (; ite != userTable.end(); ++ite)
-		//{
-		//	for (unsigned int i = 0; i < (ite->second)->Size(); ++i)
-		//	{
-		//		std::cout << (*ite->second)[i] << "\t";
-		//	}
-		//	std::cout << std::endl;
-		//}
+		//insert
+		if (key)
+		{
+			auto userRecord = UserRecord::CreateNew(key);
+			userRecord->SetString(TEST_USER_NAME, "Libai");
+			userRecord->SetString(TEST_USER_NICKNAME, "XiaoBai");
+			userRecord->SetInt(TEST_USER_SEX, 1);
+			userTable.InsertRecord(userRecord);
+		}
+		std::cout << std::endl << "after insert" << std::endl; ite = userTable.begin();
+		for (; ite != userTable.end(); ++ite)
+		{
+			for (unsigned int i = 0; i < (ite->second)->Size(); ++i)
+			{
+				std::cout << (*ite->second)[i] << "\t";
+			}
+			std::cout << std::endl;
+		}
 	}
-
+	MysqlDB::GetInstance()->Close();
 	
 
-	cin.get();
+	//cin.get();
 	return 0;
 }

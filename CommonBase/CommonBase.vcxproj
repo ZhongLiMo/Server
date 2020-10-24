@@ -139,7 +139,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basefunc.h" />
-    <ClInclude Include="cost_time.hpp" />
+    <ClInclude Include="costtime.hpp" />
     <ClInclude Include="mylog.h" />
     <ClInclude Include="mysqldb.hpp" />
     <ClInclude Include="tcpclient.h" />

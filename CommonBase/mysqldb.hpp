@@ -69,13 +69,13 @@ public:
 	std::string GetString(Index index) const;
 	void SetString(Index index, const std::string& val);
 public:
-	bool Update();
+	bool Update(bool updateNow = false);
 	size_t Size() const;
 	const Field& operator[](unsigned int index) const;
 	static std::shared_ptr<Record> CreateNew(Key key) { return std::shared_ptr<Record>(new Record(key)); }
 private:
-	bool Insert();
-	bool Delete();
+	bool Insert(bool updateNow);
+	bool Delete(bool updateNow);
 	void SetKey(Key key);
 	void GetFields(const MYSQL_FIELD* mysqlField, const MYSQL_ROW& mysqlRow, unsigned int fieldsNum);
 	static void InitDefault(const MYSQL_FIELD* mysqlField, unsigned int fieldsNum);
@@ -103,8 +103,8 @@ public:
 	RecordTable() = default;
 	virtual ~RecordTable() = default;
 	size_t Size() const;
-	bool DeleteRecord(Key key);
-	bool InsertRecord(std::shared_ptr<RecordType>record);
+	bool DeleteRecord(Key key, bool updateNow = false);
+	bool InsertRecord(std::shared_ptr<RecordType>record, bool updateNow = false);
 public:
 	typename std::unordered_map<Key, std::shared_ptr<RecordType>>::iterator find(Key key);
 	typename std::unordered_map<Key, std::shared_ptr<RecordType>>::iterator begin();
@@ -126,17 +126,18 @@ public:
 		static MysqlDB mysqldb;
 		return &mysqldb;
 	}
+	void Close();
 	template<typename RecordType>
 	bool Select(RecordTable<RecordType>& recordTable, const char* tableName, const char* WHERE = NULL, const char* ORDERBY = NULL, const char* ORDER = "ASC");
 	void Connect(const char* host, const char* user, const char* passwd, const char* dbname, unsigned int port = MYSQL_PORT, const char* unixSocket = NULL, unsigned long clientFlag = 0);
 private:
-	void Close() { this->~MysqlDB(); }
-	bool Query(const std::string& strsql) const;
-	bool Query(const char(&strsql)[SQL_SIZE]) const;
+	bool MysqlQuery(const std::string& strsql);
+	bool MysqlQuery(const char(&strsql)[SQL_SIZE], bool updateNow);
 	template<typename RecordType>
 	void InitDefaultRecord(const char(&strsql)[SQL_SIZE], const RecordType& recordType);
 private:
-	MysqlDB() : m_mysql(NULL), m_mysqlRes(NULL), m_mysqlRow(NULL), m_mysqlField(NULL) {}
+	MysqlDB() : m_mysql(NULL), m_mysqlRes(NULL), m_mysqlRow(NULL), m_mysqlField(NULL),
+		update_thread(&MysqlDB::UpdateThread, this){}
 	virtual ~MysqlDB() { if (m_mysql) mysql_close(m_mysql); m_mysql = NULL; }
 	MysqlDB(const MysqlDB&) = delete;
 	MysqlDB& operator=(const MysqlDB&) = delete;
@@ -148,11 +149,12 @@ private:
 	template<typename Index, Index size, const char* tableName>
 	friend class Record;
 private:
-	void StartModifyThread();
+	void UpdateThread();
 	std::mutex					mysql_mtx;
 	std::list<std::string>		sql_list;
 	std::atomic_bool			close_flag;
 	std::condition_variable_any	start_cond;
+	std::thread					update_thread;
 };
 
 Field::operator short()
@@ -398,7 +400,7 @@ size_t Record<Index, size, tableName>::Size() const
 	return static_cast<size_t>(size);
 }
 template<typename Index, Index size, const char* tableName>
-bool Record<Index, size, tableName>::Insert()
+bool Record<Index, size, tableName>::Insert(bool updateNow)
 {
 	static char strsql[SQL_SIZE];
 	memset(strsql, 0, SQL_SIZE);
@@ -412,20 +414,20 @@ bool Record<Index, size, tableName>::Insert()
 		}
 	}
 	len += sprintf_s(strsql + len, SQL_SIZE - len, ");");
-	return MysqlDB::GetInstance()->Query(strsql);
+	return MysqlDB::GetInstance()->MysqlQuery(strsql, updateNow);
 }
 template<typename Index, Index size, const char* tableName>
-bool Record<Index, size, tableName>::Delete()
+bool Record<Index, size, tableName>::Delete(bool updateNow)
 {
 	static char strsql[SQL_SIZE];
 	memset(strsql, 0, SQL_SIZE);
 	int len = sprintf_s(strsql, SQL_SIZE, "DELETE FROM %s WHERE %s=", tableName, g_strKey);
 	Field::Sprintfs(m_fieldArr[Record::s_keyIndex], len, strsql);
 	len += sprintf_s(strsql + len, SQL_SIZE - len, ";");
-	return MysqlDB::GetInstance()->Query(strsql);
+	return MysqlDB::GetInstance()->MysqlQuery(strsql, updateNow);
 }
 template<typename Index, Index size, const char* tableName>
-bool Record<Index, size, tableName>::Update()
+bool Record<Index, size, tableName>::Update(bool updateNow)
 {
 	static char strsql[SQL_SIZE];
 	memset(strsql, 0, SQL_SIZE);
@@ -448,7 +450,7 @@ bool Record<Index, size, tableName>::Update()
 	len += sprintf_s(strsql + len, SQL_SIZE - len, " WHERE %s=", g_strKey);
 	Field::Sprintfs(m_fieldArr[Record::s_keyIndex], len, strsql);
 	len += sprintf_s(strsql + len, SQL_SIZE - len, ";");
-	if (MysqlDB::GetInstance()->Query(strsql))
+	if (MysqlDB::GetInstance()->MysqlQuery(strsql, updateNow))
 	{
 		for (size_t i = 0; i < size; ++i)
 		{
@@ -498,11 +500,11 @@ size_t RecordTable<RecordType>::Size() const
 	return m_recordTable.size();
 }
 template<typename RecordType>
-bool RecordTable<RecordType>::DeleteRecord(Key key)
+bool RecordTable<RecordType>::DeleteRecord(Key key, bool updateNow)
 {
 	typename std::unordered_map<Key, std::shared_ptr<RecordType>>::iterator ite = m_recordTable.find(key);
 	if (ite == m_recordTable.end()) return true;
-	if (ite->second->Delete())
+	if (ite->second->Delete(updateNow))
 	{
 		m_recordTable.erase(ite);
 		return true;
@@ -510,10 +512,10 @@ bool RecordTable<RecordType>::DeleteRecord(Key key)
 	return false;
 }
 template<typename RecordType>
-bool RecordTable<RecordType>::InsertRecord(std::shared_ptr<RecordType> record)
+bool RecordTable<RecordType>::InsertRecord(std::shared_ptr<RecordType> record, bool updateNow)
 {
 	if (m_recordTable.find(record->GetKey()) != m_recordTable.end()) return true;
-	if (record->Insert())
+	if (record->Insert(updateNow))
 	{
 		m_recordTable.insert(std::make_pair(record->GetKey(), record));
 		return true;
@@ -551,7 +553,19 @@ typename std::unordered_map<Key, std::shared_ptr<RecordType>>::iterator RecordTa
 	return m_recordTable.end();
 }
 
-bool MysqlDB::Query(const std::string& strsql) const
+void MysqlDB::Close() 
+{ 
+	if (!close_flag) 
+	{ 
+		close_flag = true; 
+		start_cond.notify_all();
+		update_thread.join(); 
+		if (m_mysql) 
+			mysql_close(m_mysql); 
+		m_mysql = NULL;
+	}
+}
+bool MysqlDB::MysqlQuery(const std::string& strsql)
 {
 	if (!m_mysql) mysqllog.SaveLog(LOG_FATAL, "mysql not connect");
 	if (mysql_query(m_mysql, strsql.c_str()))
@@ -561,13 +575,22 @@ bool MysqlDB::Query(const std::string& strsql) const
 	}
 	return true;
 }
-bool MysqlDB::Query(const char(&strsql)[SQL_SIZE]) const
+bool MysqlDB::MysqlQuery(const char(&strsql)[SQL_SIZE], bool updateNow)
 {
-	if (!m_mysql) mysqllog.SaveLog(LOG_FATAL, "mysql not connect");
-	if (mysql_query(m_mysql, strsql))
+	std::unique_lock <std::mutex> lck(mysql_mtx);
+	if (updateNow)
 	{
-		mysqllog.SaveLog(LOG_ERROR, "sql(%s) query error(%s)", strsql, mysql_error(m_mysql));
-		return false;
+		if (!m_mysql) mysqllog.SaveLog(LOG_FATAL, "mysql not connect");
+		if (mysql_query(m_mysql, strsql))
+		{
+			mysqllog.SaveLog(LOG_ERROR, "sql(%s) query error(%s)", strsql, mysql_error(m_mysql));
+			return false;
+		}
+	}
+	else
+	{
+		sql_list.push_back(strsql);
+		start_cond.notify_all();
 	}
 	return true;
 }
@@ -588,9 +611,10 @@ template<typename RecordType>
 bool MysqlDB::Select(RecordTable<RecordType>& recordTable, const char* tableName, const char* WHERE, const char* ORDERBY, const char* ORDER)
 {
 	if (!tableName) return false;
+	std::unique_lock <std::mutex> lck(mysql_mtx);
 	if (!m_mysql) 
 		mysqllog.SaveLog(LOG_FATAL, "mysql not connect");
-	char strsql[SQL_SIZE];
+	static char strsql[SQL_SIZE];
 	memset(strsql, 0, SQL_SIZE);
 	int len = sprintf_s(strsql, SQL_SIZE, "SELECT * FROM %s", tableName);
 	if (WHERE) len += sprintf_s(strsql + len, SQL_SIZE - len, " WHERE %s", WHERE);
@@ -632,28 +656,21 @@ void MysqlDB::Connect(const char* host, const char* user, const char* passwd, co
 			m_mysql = NULL;
 			mysqllog.SaveLog(LOG_FATAL, "mysql connect error");
 		}
-		StartModifyThread();
 	});
 }
-void MysqlDB::StartModifyThread()
+void MysqlDB::UpdateThread()
 {
-	static std::thread modify_thread([&]() 
+	while (!close_flag)
 	{
-		while (!close_flag)
+		mysql_mtx.lock();
+		start_cond.wait(mysql_mtx);
+		while (!sql_list.empty())
 		{
-			mysql_mtx.lock();
-			start_cond.wait(mysql_mtx, [&]()
-			{
-				return !sql_list.empty();
-			});
-			while (!sql_list.empty())
-			{
-				Query(sql_list.front());
-				sql_list.pop_front();
-			}
-			mysql_mtx.unlock();
+			MysqlQuery(sql_list.front());
+			sql_list.pop_front();
 		}
-	});
+		mysql_mtx.unlock();
+	}
 }
 
 #define DBHandle (MysqlDB::GetInstance())

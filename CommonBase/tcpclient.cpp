@@ -11,12 +11,13 @@ TCPClient::~TCPClient()
 {
 	OnDisconnected();
 }
-void TCPClient::OnRecvData(std::shared_ptr<TCPPacket> ptcppacket)
+bool TCPClient::OnRecvData(std::shared_ptr<TCPPacket> ptcppacket)
 {
 	tcplog.SaveLog(LOG_INFO, "client IP(%s) recv cmd(%d) datd(%s).", m_ip.c_str(), ptcppacket->safe_check(), ptcppacket->body.c_str());
 	std::shared_ptr<TCPPacket> psend = TCPPacket::CreateNew();
 	psend->pack_packet("ning jie biao chi shi", ptcppacket->safe_check());
 	SendMsg(psend);
+	return true;
 }
 void TCPClient::OnConnected()
 {
