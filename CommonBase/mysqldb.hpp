@@ -138,7 +138,7 @@ private:
 private:
 	MysqlDB() : m_mysql(NULL), m_mysqlRes(NULL), m_mysqlRow(NULL), m_mysqlField(NULL),
 		update_thread(&MysqlDB::UpdateThread, this){}
-	virtual ~MysqlDB() { if (m_mysql) mysql_close(m_mysql); m_mysql = NULL; }
+	virtual ~MysqlDB() { Close(); }
 	MysqlDB(const MysqlDB&) = delete;
 	MysqlDB& operator=(const MysqlDB&) = delete;
 private:

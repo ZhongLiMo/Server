@@ -15,6 +15,10 @@ using namespace std::chrono;
 MyLog tcplog("TCPServer", "../log");
 MyLog mysqllog("MYSQL", "../log");
 
+const char user[] = "root";
+const char pswd[] = "123456";
+const char host[] = "localhost";
+const char database[] = "test";
 const char tableName[] = "test_user";
 
 enum TEST_USER
@@ -41,8 +45,14 @@ public:
 
 int main()
 {
-	//TCPServer::GetInstance()->StartServer();
-	//MysqlDB::GetInstance()->Connect();
+	{
+		CostTime costtime(tcplog, __LINE__, "TCPServer->StartServer");
+		TCPServer::GetInstance()->StartServer();
+	}
+	{
+		CostTime costtime(tcplog, __LINE__, "DBHandle->Connect");
+		DBHandle->Connect(host, user, pswd, database);
+	}
 
 	std::thread testthread([]
 	{
@@ -50,16 +60,14 @@ int main()
 		Test test;
 		tcplog.SaveLog(LOG_DEBUG, "对象真实地址: %p", &test);
 		Timer timer(manager, &Test::test, &test, 1);
-		//Timer timer(manager, [] {
-		//	cout << 10 << endl;
-		//});
+
 		timer.StartTimer(100, true);
 		int n = 0;
 		while (1)
 		{
 			n++;
 			manager.OnTimer();
-			if (n == 5000000)
+			if (n == 2000000)
 			{
 				timer.StopTimer();
 				return;
@@ -68,24 +76,18 @@ int main()
 	});
 	testthread.detach();
 
-	const char user[] = "root";
-	const char pswd[] = "123456";
-	const char host[] = "localhost";
-	const char database[] = "test";
+	
 	{
-		{
-			CostTime costtime(tcplog, __LINE__, "DBHandle->Connect");
-			DBHandle->Connect(host, user, pswd, database);
-		}
 		typedef DBRecord<TEST_USER, TEST_USER_MAX, tableName> UserRecord;
 		DBTble<UserRecord> userTable;
-
-		//select
-		std::cout << "after select" << std::endl;
 		{
 			CostTime costtime(tcplog, __LINE__, "DBHandle->Select");
 			DBHandle->Select(userTable, tableName);
 		}
+
+		//select
+		std::cout << "after select" << std::endl;
+		
 		auto ite = userTable.begin();
 		for (; ite != userTable.end(); ++ite)
 		{
@@ -150,9 +152,7 @@ int main()
 			std::cout << std::endl;
 		}
 	}
-	MysqlDB::GetInstance()->Close();
 	
-
 	//cin.get();
 	return 0;
 }

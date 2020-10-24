@@ -133,6 +133,7 @@ void TCPServer::CloseServer()
 	if (!close_flag)
 	{
 		close_flag = true;
+		start_cond.notify_all();
 		accept_thread.join();
 		recvmsg_thread.join();
 		for (u_int i = 0; i < m_client_set.fd_count; ++i)
@@ -149,12 +150,13 @@ void TCPServer::AcceptThread()
 	start_cond.wait(start_mtx);
 	start_mtx.unlock();
 	fd_set accept_set;
+	struct timeval timeout = { 1, 0 };
 	while (!close_flag)
 	{
 		tcplog.SaveLog(LOG_INFO, "acceptThread");
 		FD_ZERO(&accept_set);
 		FD_SET(m_socket, &accept_set);
-		int result = select(10000, &accept_set, NULL, NULL, NULL);
+		int result = select(FD_SETSIZE, &accept_set, NULL, NULL, &timeout);
 		if (result == SOCKET_ERROR)
 		{
 			tcplog.SaveLog(LOG_ERROR, "select() error.");
@@ -190,9 +192,7 @@ void TCPServer::RecvmsgThread()
 	int cur_read_len = 0;
 	char pheader[TCP_HEAD_LEN];
 	char read_buf[1024 * 100];
-	struct timeval timeout;
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 0;
+	struct timeval timeout = {0, 0};
 	while (!close_flag)
 	{
 		m_timer_manager.OnTimer();
@@ -210,7 +210,7 @@ void TCPServer::RecvmsgThread()
 		if (!m_client_set.fd_count) continue;
 		tcplog.SaveLog(LOG_INFO, "recvmsgThread cur client num[%d]", cur_client_num());
 		read_set = m_client_set;
-		int result = select(10000, &read_set, NULL, NULL, &timeout);
+		int result = select(FD_SETSIZE, &read_set, NULL, NULL, &timeout);
 		if (result == SOCKET_ERROR)
 		{
 			tcplog.SaveLog(LOG_ERROR, "select() error.");
