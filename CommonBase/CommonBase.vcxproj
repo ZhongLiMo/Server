@@ -89,14 +89,15 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;MYDEBUG_ON</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
     </Link>
     <Lib>
       <AdditionalDependencies>ws2_32.lib;libmysql.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../lib/</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../mysqld-8.0/lib/</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

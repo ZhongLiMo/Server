@@ -1,7 +1,7 @@
 #ifndef MYSQLDB_H
 #define MYSQLDB_H
 
-#include "../include/mysql.h"
+#include "../mysqld-8.0/include/mysql.h"
 
 #include <string>
 #include <memory>
