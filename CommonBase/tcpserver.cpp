@@ -142,6 +142,16 @@ void TCPServer::CloseServer()
 		}
 		closesocket(m_socket);
 		WSACleanup();
+		while (!m_client_map.empty())
+		{
+			delete m_client_map.begin()->second;
+			m_client_map.erase(m_client_map.begin());
+		}
+		while (!accecpt_client.empty())
+		{
+			delete accecpt_client.begin()->second;
+			accecpt_client.erase(accecpt_client.begin());
+		}
 	}
 }
 void TCPServer::AcceptThread()
