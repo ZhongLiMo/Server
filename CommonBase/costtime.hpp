@@ -15,7 +15,7 @@ public:
 	}
 	~CostTime()
 	{
-		mylog.SaveLog(LOG_LEVEL_INFO, fun_line, fun_name.c_str(), "use time %.2f ms.", static_cast<double>(clock() - start));
+		mylog.SaveLog(LOG_LEVEL_INFO, fun_line, fun_name.c_str(), "use time %ld ms.", clock() - start);
 	}
 private:
 	int				fun_line;
