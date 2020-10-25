@@ -23,6 +23,7 @@
     <ClCompile Include="单例模式(Singleton Pattern).cpp" />
     <ClCompile Include="原型模式(Prototype Pattern).cpp" />
     <ClCompile Include="工厂模式(Factory Pattern).cpp" />
+    <ClCompile Include="建造者模式%28Builder Pattern%29.cpp" />
     <ClCompile Include="抽象工厂(Abstract Factory).cpp" />
     <ClCompile Include="模板方法(Template Method).cpp" />
     <ClCompile Include="策略模式(Strategy Pattern).cpp" />
