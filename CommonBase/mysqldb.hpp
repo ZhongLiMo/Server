@@ -15,6 +15,7 @@
 extern MyLog mysqllog;
 
 typedef long long	Key;
+const Key			g_key = 20200001;
 const char*			g_strKey = "id";
 const char*			g_encoding = "GBK";
 const unsigned int	SQL_SIZE = 1024;
@@ -102,9 +103,10 @@ class RecordTable
 public:
 	RecordTable() = default;
 	virtual ~RecordTable() = default;
-	size_t Size() const;
+	size_t Size() const { return m_recordTable.size(); }
 	bool DeleteRecord(Key key, bool updateNow = false);
 	bool InsertRecord(std::shared_ptr<RecordType>record, bool updateNow = false);
+	Key GetNewKey() const { if (m_keySet.empty()) return g_key; return *m_keySet.rbegin() + 1; }
 public:
 	typename std::unordered_map<Key, std::shared_ptr<RecordType>>::iterator find(Key key);
 	typename std::unordered_map<Key, std::shared_ptr<RecordType>>::iterator begin();
@@ -115,7 +117,8 @@ private:
 private:
 	void CreateTable(MYSQL_RES* mysqlRes, const MYSQL_FIELD* mysqlField, MYSQL_ROW& mysqlRow, unsigned int fieldsNum, unsigned __int64 rowsNum);
 private:
-	std::unordered_map<Key, std::shared_ptr<RecordType>> m_recordTable;
+	std::set<Key>											m_keySet;
+	std::unordered_map<Key, std::shared_ptr<RecordType>>	m_recordTable;
 	friend class MysqlDB;
 };
 class MysqlDB
@@ -495,11 +498,6 @@ void Record<Index, size, tableName>::InitDefault(const MYSQL_FIELD* mysqlField, 
 }
 
 template<typename RecordType>
-size_t RecordTable<RecordType>::Size() const
-{
-	return m_recordTable.size();
-}
-template<typename RecordType>
 bool RecordTable<RecordType>::DeleteRecord(Key key, bool updateNow)
 {
 	typename std::unordered_map<Key, std::shared_ptr<RecordType>>::iterator ite = m_recordTable.find(key);
@@ -507,6 +505,7 @@ bool RecordTable<RecordType>::DeleteRecord(Key key, bool updateNow)
 	if (ite->second->Delete(updateNow))
 	{
 		m_recordTable.erase(ite);
+		m_keySet.erase(m_keySet.find(key));
 		return true;
 	}
 	return false;
@@ -518,6 +517,7 @@ bool RecordTable<RecordType>::InsertRecord(std::shared_ptr<RecordType> record, b
 	if (record->Insert(updateNow))
 	{
 		m_recordTable.insert(std::make_pair(record->GetKey(), record));
+		m_keySet.insert(record->GetKey());
 		return true;
 	}
 	return false;
@@ -528,6 +528,7 @@ void RecordTable<RecordType>::CreateTable(MYSQL_RES* mysqlRes, const MYSQL_FIELD
 	if (!mysqlField)
 		return;
 	m_recordTable.clear();
+	m_keySet.clear();
 	RecordType::InitDefault(mysqlField, fieldsNum);
 	for (unsigned __int64 row = 0; row < rowsNum; ++row)
 	{
@@ -535,6 +536,7 @@ void RecordTable<RecordType>::CreateTable(MYSQL_RES* mysqlRes, const MYSQL_FIELD
 		std::shared_ptr<RecordType> record(RecordType::CreateNew());
 		record->GetFields(mysqlField, mysqlRow, fieldsNum);
 		m_recordTable.insert(std::make_pair(record->GetKey(), record));
+		m_keySet.insert(record->GetKey());
 	}
 }
 template<typename RecordType>

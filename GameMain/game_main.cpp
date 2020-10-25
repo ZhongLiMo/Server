@@ -78,8 +78,9 @@ int main()
 
 	
 	{
-		typedef DBRecord<TEST_USER, TEST_USER_MAX, tableName> UserRecord;
-		DBTble<UserRecord> userTable;
+		typedef DBRecord<TEST_USER, TEST_USER_MAX, tableName> Record;
+		typedef DBTble<Record> Table;
+		Table userTable;
 		{
 			CostTime costtime(tcplog, __LINE__, "DBHandle->Select");
 			DBHandle->Select(userTable, tableName);
@@ -134,14 +135,12 @@ int main()
 		}
 
 		//insert
-		if (key)
-		{
-			auto userRecord = UserRecord::CreateNew(key);
-			userRecord->SetString(TEST_USER_NAME, "Libai");
-			userRecord->SetString(TEST_USER_NICKNAME, "XiaoBai");
-			userRecord->SetInt(TEST_USER_SEX, 1);
-			userTable.InsertRecord(userRecord);
-		}
+		auto userRecord = Record::CreateNew(userTable.GetNewKey());
+		userRecord->SetString(TEST_USER_NAME, "Libai");
+		userRecord->SetString(TEST_USER_NICKNAME, "XiaoBai");
+		userRecord->SetInt(TEST_USER_SEX, 1);
+		userTable.InsertRecord(userRecord);
+
 		std::cout << std::endl << "after insert" << std::endl; ite = userTable.begin();
 		for (; ite != userTable.end(); ++ite)
 		{
