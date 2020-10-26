@@ -57,5 +57,11 @@
     <ClCompile Include="状态模式(State Pattern)cpp.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="组合模式%28Composite Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="迭代器模式(Iterator Pattern).cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
