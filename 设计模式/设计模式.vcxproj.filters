@@ -54,5 +54,8 @@
     <ClCompile Include="备忘录模式%28Memento Pattern%29.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="状态模式(State Pattern)cpp.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
