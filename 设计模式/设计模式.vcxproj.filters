@@ -45,5 +45,14 @@
     <ClCompile Include="享元模式%28Flyweight Pattern%29.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="代理模式(Proxy Pattern).cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="中介模式%28Mediator Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="备忘录模式%28Memento Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
