@@ -41,7 +41,7 @@ void MyLog::SaveLog(LOG_LEVEL log_level, int line, const char *func, const char 
 }
 void MyLog::output()
 {
-#ifdef MYDEBUG_ON
+#ifdef MYLOG_ON
 	printf("%s", m_format_buf);
 #endif
 	if (m_log_file)
