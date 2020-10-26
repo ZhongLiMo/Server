@@ -36,10 +36,13 @@
     <ClCompile Include="原型模式(Prototype Pattern).cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="享元模式.cpp">
+    <ClCompile Include="建造者模式%28Builder Pattern%29.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="建造者模式%28Builder Pattern%29.cpp">
+    <ClCompile Include="装饰模式%28Decorator Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="享元模式%28Flyweight Pattern%29.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
