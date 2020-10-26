@@ -139,8 +139,8 @@ private:
 	template<typename RecordType>
 	void InitDefaultRecord(const char(&strsql)[SQL_SIZE], const RecordType& recordType);
 private:
-	MysqlDB() : m_mysql(NULL), m_mysqlRes(NULL), m_mysqlRow(NULL), m_mysqlField(NULL),
-		update_thread(&MysqlDB::UpdateThread, this){}
+	MysqlDB() : m_mysql(NULL), m_mysqlRes(NULL), m_mysqlRow(NULL), m_mysqlField(NULL), 
+		close_flag(false), update_thread(&MysqlDB::UpdateThread, this){}
 	virtual ~MysqlDB() { Close(); }
 	MysqlDB(const MysqlDB&) = delete;
 	MysqlDB& operator=(const MysqlDB&) = delete;

@@ -3,8 +3,6 @@
 
 #define FD_SETSIZE 1024
 
-#include <WS2tcpip.h>
-
 #include <map>
 #include <thread>
 #include <mutex>

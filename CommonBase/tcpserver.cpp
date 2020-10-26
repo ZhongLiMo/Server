@@ -4,7 +4,9 @@
 
 extern MyLog tcplog;
 
-TCPServer::TCPServer() : accept_thread(&TCPServer::AcceptThread, this), recvmsg_thread(&TCPServer::RecvmsgThread, this)
+TCPServer::TCPServer() : close_flag(false),
+	accept_thread(&TCPServer::AcceptThread, this), 
+	recvmsg_thread(&TCPServer::RecvmsgThread, this)
 {
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData)) tcplog.SaveLog(LOG_FATAL, "WSAStartup() error.");
@@ -164,7 +166,6 @@ void TCPServer::AcceptThread()
 	struct timeval timeout = { 1, 0 };
 	while (!close_flag)
 	{
-		tcplog.SaveLog(LOG_INFO, "acceptThread");
 		FD_ZERO(&accept_set);
 		FD_SET(m_socket, &accept_set);
 		int result = select(FD_SETSIZE, &accept_set, NULL, NULL, &timeout);
@@ -219,7 +220,6 @@ void TCPServer::RecvmsgThread()
 		}
 		accept_mtx.unlock();
 		if (!m_client_set.fd_count) continue;
-		tcplog.SaveLog(LOG_INFO, "recvmsgThread cur client num[%d]", cur_client_num());
 		read_set = m_client_set;
 		int result = select(FD_SETSIZE, &read_set, NULL, NULL, &timeout);
 		if (result == SOCKET_ERROR)
@@ -229,6 +229,7 @@ void TCPServer::RecvmsgThread()
 		}
 		else if (result > 0)
 		{
+			tcplog.SaveLog(LOG_INFO, "RecvmsgThread cur client num[%d]", cur_client_num());
 			for (u_int i = 0; i < m_client_set.fd_count;)
 			{
 				if (!FD_ISSET(m_client_set.fd_array[i], &read_set) || m_client_set.fd_array[i] == INVALID_SOCKET)

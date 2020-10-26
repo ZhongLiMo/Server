@@ -91,13 +91,14 @@
       <PreprocessorDefinitions>_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;MYLOG_ON</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>
       </AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
     </Link>
     <Lib>
-      <AdditionalDependencies>ws2_32.lib;libmysql.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../mysqld-8.0/lib/</AdditionalLibraryDirectories>
+      <AdditionalDependencies>WS2_32.lib;libmysql.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\mysqld-8.0\lib\;</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

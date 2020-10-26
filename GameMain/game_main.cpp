@@ -11,7 +11,6 @@ using namespace std::chrono;
 #include "timer.h"
 #include "mysqldb.hpp"
 #include "costtime.hpp"
-#include "redisserver.h"
 
 MyLog tcplog("TCPServer", "../log");
 MyLog mysqllog("MYSQL", "../log");
@@ -46,8 +45,6 @@ public:
 
 int main()
 {
-	//RedisServer aa;
-	//aa.start();
 	{
 		CostTime costtime(tcplog, __LINE__, "TCPServer->StartServer");
 		TCPServer::GetInstance()->StartServer();
