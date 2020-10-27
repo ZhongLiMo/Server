@@ -27,9 +27,6 @@
     <ClCompile Include="工厂模式(Factory Pattern).cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="观察者事件.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="模板方法(Template Method).cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -61,6 +58,30 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="迭代器模式(Iterator Pattern).cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="命令模式%28Commond Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="责任链模式%28Chain Of Responsibility Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="访问者模式%28Visitor Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="解释器模式%28Interpreter Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="观察者模式%28Observer Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="桥模式%28Bridge Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="外观模式%28Facade Pattern%29.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="适配器模式%28Adapter Pattern%29.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
