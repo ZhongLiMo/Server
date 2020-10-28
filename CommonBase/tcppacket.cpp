@@ -9,7 +9,7 @@ TCPPacket::~TCPPacket()
 }
 int TCPPacket::safe_check()
 {
-	if(body.length() != (unsigned int)header.length) return -1;
+	if(body.length() != (unsigned int)header.length) return 0;
 	return header.cmd;
 }
 int TCPPacket::save_packet(TCPHeader *h, std::string b)

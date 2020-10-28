@@ -291,7 +291,7 @@ void TCPServer::RecvmsgThread()
 						{
 						ON_RECV_MSG:
 							std::shared_ptr<TCPPacket> ptcppacket = TCPPacket::CreateNew();
-							if (ptcppacket->save_packet(reinterpret_cast<TCPHeader*>(pheader), read_buf) != -1
+							if (ptcppacket->save_packet(reinterpret_cast<TCPHeader*>(pheader), read_buf)
 								&& m_client_map.find(socket)->second->OnRecvData(ptcppacket))
 							{
 								++i;
