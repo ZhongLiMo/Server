@@ -50,6 +50,7 @@ private:
 	std::mutex										start_mtx;
 	std::mutex										accept_mtx;
 	std::atomic_bool								close_flag;
+	std::atomic_bool								start_flag;
 	std::condition_variable_any						start_cond;
 	std::map<SOCKET, TCPClient*>					accecpt_client;
 private:

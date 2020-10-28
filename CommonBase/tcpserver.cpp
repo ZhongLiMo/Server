@@ -4,7 +4,7 @@
 
 extern MyLog tcplog;
 
-TCPServer::TCPServer() : close_flag(false),
+TCPServer::TCPServer() : close_flag(false), start_flag(false),
 	accept_thread(&TCPServer::AcceptThread, this), 
 	recvmsg_thread(&TCPServer::RecvmsgThread, this)
 {
@@ -23,6 +23,7 @@ void TCPServer::StartServer(int port)
 	{
 		m_port = port;
 		bind_and_listen();
+		start_flag = true;
 		start_cond.notify_all();
 	});
 }
@@ -135,6 +136,7 @@ void TCPServer::CloseServer()
 	if (!close_flag)
 	{
 		close_flag = true;
+		start_flag = true;
 		start_cond.notify_all();
 		accept_thread.join();
 		recvmsg_thread.join();
@@ -160,7 +162,7 @@ void TCPServer::CloseServer()
 void TCPServer::AcceptThread()
 {
 	start_mtx.lock();
-	start_cond.wait(start_mtx);
+	start_cond.wait(start_mtx, [this] {return !!start_flag; });
 	start_mtx.unlock();
 	fd_set accept_set;
 	struct timeval timeout = { 1, 0 };
@@ -198,7 +200,7 @@ void TCPServer::AcceptThread()
 void TCPServer::RecvmsgThread()
 {
 	start_mtx.lock();
-	start_cond.wait(start_mtx);
+	start_cond.wait(start_mtx, [this] {return !!start_flag; });
 	start_mtx.unlock();
 	fd_set read_set;
 	int cur_read_len = 0;
