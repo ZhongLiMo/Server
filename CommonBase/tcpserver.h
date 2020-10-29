@@ -4,6 +4,7 @@
 #define FD_SETSIZE 1024
 
 #include <map>
+#include <list>
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -45,8 +46,17 @@ private:
 private:
 	void CloseServer();
 	void AcceptThread();
-	void RecvmsgThread();
+	void RecvMsgThread();
+	void SendMsgThread();
+	void RemoveClient(SOCKET socket);
+public:
+	void SendMsgToClient(SOCKET socket, std::shared_ptr<TCPPacket> ptcppacket);
 private:
+	using SendList = std::list<std::pair<SOCKET, std::shared_ptr<TCPPacket>>>;
+	SendList										send_list;
+	std::mutex										send_mtx;
+	std::condition_variable_any						send_cond;
+	std::mutex										client_mtx;
 	std::mutex										start_mtx;
 	std::mutex										accept_mtx;
 	std::atomic_bool								close_flag;
@@ -56,6 +66,7 @@ private:
 private:
 	std::thread										accept_thread;
 	std::thread										recvmsg_thread;
+	std::thread										sendmsg_thread;
 };
 
 #endif // !TCP_SERVER_H

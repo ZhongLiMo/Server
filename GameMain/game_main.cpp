@@ -45,6 +45,7 @@ public:
 
 int main()
 {
+	CostTime costtime(tcplog, COST_TIME_CONSTRUCTOR);
 	{
 		CostTime costtime(tcplog, __LINE__, "TCPServer->StartServer");
 		TCPServer::GetInstance()->StartServer();
@@ -54,29 +55,39 @@ int main()
 		DBHandle->Connect(host, user, pswd, database);
 	}
 
-	std::thread testthread([]
-	{
-		TimerManager manager;
-		Test test;
-		tcplog.SaveLog(LOG_DEBUG, "对象真实地址: %p", &test);
-		Timer timer(manager, &Test::test, &test, 1);
+	//std::thread testthread([]
+	//{
+	//	TimerManager manager;
+	//	Test test;
+	//	tcplog.SaveLog(LOG_DEBUG, "对象真实地址: %p", &test);
+	//	Timer timer(manager, &Test::test, &test, 1);
 
-		timer.StartTimer(100, true);
-		int n = 0;
-		while (1)
-		{
-			n++;
-			manager.OnTimer();
-			if (n == 2000000)
-			{
-				timer.StopTimer();
-				return;
-			}
-		}
-	});
-	testthread.detach();
+	//	timer.StartTimer(100, true);
+	//	int n = 0;
+	//	while (1)
+	//	{
+	//		n++;
+	//		manager.OnTimer();
+	//		if (n == 2000000)
+	//		{
+	//			timer.StopTimer();
+	//			return;
+	//		}
+	//	}
+	//});
+	//testthread.detach();
 
 	
+
+	std::this_thread::sleep_for(std::chrono::seconds(3));
+	cin.get();
+	return 0;
+}
+
+
+
+/*
+
 	{
 		typedef DBRecord<TEST_USER, TEST_USER_MAX, tableName> Record;
 		typedef DBTble<Record> Table;
@@ -88,7 +99,7 @@ int main()
 
 		//select
 		std::cout << "after select" << std::endl;
-		
+
 		auto ite = userTable.begin();
 		for (; ite != userTable.end(); ++ite)
 		{
@@ -151,7 +162,5 @@ int main()
 			std::cout << std::endl;
 		}
 	}
-	
-	cin.get();
-	return 0;
-}
+
+*/

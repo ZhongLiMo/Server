@@ -6,7 +6,8 @@ extern MyLog tcplog;
 
 TCPServer::TCPServer() : close_flag(false), start_flag(false),
 	accept_thread(&TCPServer::AcceptThread, this), 
-	recvmsg_thread(&TCPServer::RecvmsgThread, this)
+	recvmsg_thread(&TCPServer::RecvMsgThread, this),
+	sendmsg_thread(&TCPServer::SendMsgThread, this)
 {
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData)) tcplog.SaveLog(LOG_FATAL, "WSAStartup() error.");
@@ -138,8 +139,10 @@ void TCPServer::CloseServer()
 		close_flag = true;
 		start_flag = true;
 		start_cond.notify_all();
+		send_cond.notify_all();
 		accept_thread.join();
 		recvmsg_thread.join();
+		sendmsg_thread.join();
 		for (u_int i = 0; i < m_client_set.fd_count; ++i)
 		{
 			closesocket(m_client_set.fd_array[i]);
@@ -197,7 +200,7 @@ void TCPServer::AcceptThread()
 		}
 	}
 }
-void TCPServer::RecvmsgThread()
+void TCPServer::RecvMsgThread()
 {
 	start_mtx.lock();
 	start_cond.wait(start_mtx, [this] {return !!start_flag; });
@@ -234,7 +237,7 @@ void TCPServer::RecvmsgThread()
 			tcplog.SaveLog(LOG_INFO, "RecvmsgThread cur client num[%d]", cur_client_num());
 			for (u_int i = 0; i < m_client_set.fd_count;)
 			{
-				if (!FD_ISSET(m_client_set.fd_array[i], &read_set) || m_client_set.fd_array[i] == INVALID_SOCKET)
+				if (!FD_ISSET(m_client_set.fd_array[i], &read_set))
 				{
 					++i;
 					continue;
@@ -242,8 +245,10 @@ void TCPServer::RecvmsgThread()
 				SOCKET socket = m_client_set.fd_array[i];
 				if (m_client_map.find(socket) == m_client_map.end())
 				{
+					client_mtx.lock();
 					closesocket(socket);
 					FD_CLR(socket, &m_client_set);
+					client_mtx.unlock();
 					tcplog.SaveLog(LOG_ERROR, "socket not find in map");
 					++i;
 					continue;
@@ -270,18 +275,12 @@ void TCPServer::RecvmsgThread()
 						DWORD err = WSAGetLastError();
 						if (err == WSAECONNRESET) tcplog.SaveLog(LOG_INFO, "client IP(%s) shutdown.", m_client_map.find(socket)->second->GetIP().c_str());
 						else tcplog.SaveLog(LOG_INFO, "recv() error.");
-						closesocket(socket);
-						FD_CLR(socket, &m_client_set);
-						delete m_client_map[socket];
-						m_client_map.erase(socket);
+						RemoveClient(socket);
 						break;
 					}
 					else if (result == 0)
 					{
-						closesocket(socket);
-						FD_CLR(socket, &m_client_set);
-						delete m_client_map[socket];
-						m_client_map.erase(socket);
+						RemoveClient(socket);
 						break;
 					}
 					else
@@ -292,16 +291,13 @@ void TCPServer::RecvmsgThread()
 						ON_RECV_MSG:
 							std::shared_ptr<TCPPacket> ptcppacket = TCPPacket::CreateNew();
 							if (ptcppacket->save_packet(reinterpret_cast<TCPHeader*>(pheader), read_buf)
-								&& m_client_map.find(socket)->second->OnRecvData(ptcppacket))
+								&& m_client_map.find(socket)->second->OnRecvMsg(ptcppacket))
 							{
 								++i;
 							}
 							else
 							{
-								closesocket(socket);
-								FD_CLR(socket, &m_client_set);
-								delete m_client_map[socket];
-								m_client_map.erase(socket);
+								RemoveClient(socket);
 								tcplog.SaveLog(LOG_ERROR, "client send length not right.");
 							}
 							break;
@@ -311,4 +307,45 @@ void TCPServer::RecvmsgThread()
 			}
 		}
 	}
+}
+void TCPServer::SendMsgThread()
+{
+	start_mtx.lock();
+	start_cond.wait(start_mtx, [this] {return !!start_flag; });
+	start_mtx.unlock();
+	while (!close_flag)
+	{
+		send_mtx.lock();
+		send_cond.wait(send_mtx, [&] { return !send_list.empty() || close_flag; });
+		if (close_flag)
+		{
+			send_mtx.unlock();
+			return;
+		}
+		std::pair<SOCKET, std::shared_ptr<TCPPacket>> send_msg = send_list.front();
+		send_list.pop_front();
+		send_mtx.unlock();
+		client_mtx.lock();
+		if (FD_ISSET(send_msg.first, &m_client_set))
+		{
+			send(send_msg.first, send_msg.second->data.c_str(), static_cast<int>(send_msg.second->data.length()), 0);
+		}
+		client_mtx.unlock();
+	}
+}
+void TCPServer::RemoveClient(SOCKET socket)
+{
+	client_mtx.lock();
+	closesocket(socket);
+	FD_CLR(socket, &m_client_set);
+	delete m_client_map[socket];
+	m_client_map.erase(socket);
+	client_mtx.unlock();
+}
+void TCPServer::SendMsgToClient(SOCKET socket, std::shared_ptr<TCPPacket> ptcppacket)
+{
+	send_mtx.lock();
+	send_list.push_back(std::make_pair(socket, ptcppacket));
+	send_mtx.unlock();
+	send_cond.notify_all();
 }

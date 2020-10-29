@@ -1,5 +1,6 @@
 #include "tcpclient.h"
 #include "mylog.h"
+#include "tcpserver.h"
 
 extern MyLog tcplog;
 
@@ -11,7 +12,7 @@ TCPClient::~TCPClient()
 {
 	OnDisconnected();
 }
-bool TCPClient::OnRecvData(std::shared_ptr<TCPPacket> ptcppacket)
+bool TCPClient::OnRecvMsg(std::shared_ptr<TCPPacket> ptcppacket)
 {
 	tcplog.SaveLog(LOG_INFO, "client IP(%s) recv cmd(%d) datd(%s).", m_ip.c_str(), ptcppacket->safe_check(), ptcppacket->body.c_str());
 	std::shared_ptr<TCPPacket> psend = TCPPacket::CreateNew();
@@ -29,5 +30,5 @@ void TCPClient::OnDisconnected()
 }
 void TCPClient::SendMsg(std::shared_ptr<TCPPacket> ptcppacket)
 {
-	send(m_socket, ptcppacket->data.c_str(), static_cast<int>(ptcppacket->data.length()), 0);
+	TCPServer::GetInstance()->SendMsgToClient(m_socket, ptcppacket);
 }

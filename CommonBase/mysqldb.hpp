@@ -665,12 +665,19 @@ void MysqlDB::UpdateThread()
 	while (!close_flag)
 	{
 		mysql_mtx.lock();
-		start_cond.wait(mysql_mtx);
-		while (!sql_list.empty())
+		start_cond.wait(mysql_mtx, [&] { return !sql_list.empty() || close_flag; });
+		if (close_flag)
 		{
-			MysqlQuery(sql_list.front());
-			sql_list.pop_front();
+			while (!sql_list.empty())
+			{
+				MysqlQuery(sql_list.front());
+				sql_list.pop_front();
+			}
+			mysql_mtx.unlock();
+			return;
 		}
+		MysqlQuery(sql_list.front());
+		sql_list.pop_front();
 		mysql_mtx.unlock();
 	}
 }
