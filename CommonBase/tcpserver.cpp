@@ -1,8 +1,10 @@
 #include "tcpserver.h"
 #include "mylog.h"
+#include "timer.h"
 #include "tcppacket.h"
 
 extern MyLog tcplog;
+TimerManager TCPTimer;
 
 TCPServer::TCPServer() : close_flag(false), start_flag(false),
 	accept_thread(&TCPServer::AcceptThread, this), 
@@ -64,9 +66,9 @@ SOCKET TCPServer::get_server_socket()
 	set_socket(socket, true);
 	return socket;
 }
-void TCPServer::set_socket(SOCKET& socket, bool is_server)
+bool TCPServer::set_socket(const SOCKET& socket, bool is_server)
 {
-	if (INVALID_SOCKET == socket) return;
+	if (INVALID_SOCKET == socket) return false;
 	int optval = 1;
 	if (setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval)))
 	{
@@ -79,8 +81,7 @@ void TCPServer::set_socket(SOCKET& socket, bool is_server)
 		else
 		{
 			tcplog.SaveLog(LOG_ERROR, "setsockopt(SO_REUSEADDR) failed error[%d].", WSAGetLastError());
-			socket = INVALID_SOCKET;
-			return;
+			return false;
 		}
 	}
 	optval = 1;
@@ -95,8 +96,7 @@ void TCPServer::set_socket(SOCKET& socket, bool is_server)
 		else
 		{
 			tcplog.SaveLog(LOG_ERROR, "setsockopt(SO_KEEPALIVE) failed error[%d].", WSAGetLastError());
-			socket = INVALID_SOCKET;
-			return;
+			return false;
 		}
 	}
 	optval = 32 * 1024;
@@ -111,8 +111,7 @@ void TCPServer::set_socket(SOCKET& socket, bool is_server)
 		else
 		{
 			tcplog.SaveLog(LOG_ERROR, "setsockopt(SO_SNDBUF) failed error[%d].", WSAGetLastError());
-			socket = INVALID_SOCKET;
-			return;
+			return false;
 		}
 	}
 	unsigned long a = 1;
@@ -127,10 +126,10 @@ void TCPServer::set_socket(SOCKET& socket, bool is_server)
 		else
 		{
 			tcplog.SaveLog(LOG_ERROR, "ioctlsocket() failed error[%d].", WSAGetLastError());
-			socket = INVALID_SOCKET;
-			return;
+			return false;
 		}
 	}
+	return true;
 }
 void TCPServer::CloseServer()
 {
@@ -147,9 +146,6 @@ void TCPServer::CloseServer()
 		{
 			closesocket(m_client_set.fd_array[i]);
 		}
-		FD_ZERO(&m_client_set);
-		closesocket(m_socket);
-		WSACleanup();
 		while (!m_client_map.empty())
 		{
 			delete m_client_map.begin()->second;
@@ -157,9 +153,13 @@ void TCPServer::CloseServer()
 		}
 		while (!accecpt_client.empty())
 		{
-			delete accecpt_client.begin()->second;
+			if (accecpt_client.begin()->first != INVALID_SOCKET)
+				closesocket(accecpt_client.begin()->first);
 			accecpt_client.erase(accecpt_client.begin());
 		}
+		FD_ZERO(&m_client_set);
+		closesocket(m_socket);
+		WSACleanup();
 	}
 }
 void TCPServer::AcceptThread()
@@ -173,30 +173,15 @@ void TCPServer::AcceptThread()
 	{
 		FD_ZERO(&accept_set);
 		FD_SET(m_socket, &accept_set);
-		int result = select(FD_SETSIZE, &accept_set, NULL, NULL, &timeout);
-		if (result == SOCKET_ERROR)
-		{
-			tcplog.SaveLog(LOG_ERROR, "select() error.");
-		}
-		else if (result > 0)
+		if (select(FD_SETSIZE, &accept_set, NULL, NULL, &timeout) > 0)
 		{
 			sockaddr_in clientAddr;
 			memset(&clientAddr, 0, sizeof(clientAddr));
 			int len = sizeof(clientAddr);
 			SOCKET clientSocket = accept(m_socket, (sockaddr*)&clientAddr, &len);
-			set_socket(clientSocket);
-			if (clientSocket == INVALID_SOCKET)
-			{
-				tcplog.SaveLog(LOG_ERROR, "new clientSocket error.");
-			}
-			else
-			{
-				TCPClient* pp(new TCPClient(clientSocket, inet_ntoa(clientAddr.sin_addr)));
-				tcplog.SaveLog(LOG_INFO, "new client login IP(%s).", pp->GetIP().c_str());
-				accept_mtx.lock();
-				accecpt_client.insert(std::make_pair(clientSocket, pp));
-				accept_mtx.unlock();
-			}
+			accept_mtx.lock();
+			accecpt_client.insert(std::make_pair(clientSocket, inet_ntoa(clientAddr.sin_addr)));
+			accept_mtx.unlock();
 		}
 	}
 }
@@ -212,16 +197,20 @@ void TCPServer::RecvMsgThread()
 	struct timeval timeout = {0, 0};
 	while (!close_flag)
 	{
-		m_timer_manager.OnTimer();
+		TCPTimer.OnTimer();
 		accept_mtx.lock();
-		if (!accecpt_client.empty())
+		while (!accecpt_client.empty())
 		{
-			for (std::map<SOCKET, TCPClient*>::iterator ite = accecpt_client.begin(); ite != accecpt_client.end(); ++ite)
+			if (set_socket(accecpt_client.begin()->first))
 			{
-				FD_SET(ite->first, &m_client_set);
+				FD_SET(accecpt_client.begin()->first, &m_client_set);
+				m_client_map.insert(std::make_pair(accecpt_client.begin()->first, new TCPClient(accecpt_client.begin()->first, accecpt_client.begin()->second)));
 			}
-			m_client_map.insert(accecpt_client.begin(), accecpt_client.end());
-			accecpt_client.clear();
+			else
+			{
+				tcplog.SaveLog(LOG_ERROR, "new client setsocket() error.");
+			}
+			accecpt_client.erase(accecpt_client.begin());
 		}
 		accept_mtx.unlock();
 		if (!m_client_set.fd_count) continue;
@@ -269,12 +258,12 @@ void TCPServer::RecvMsgThread()
 						if (errno == EAGAIN  || errno == EINTR || errno == EINPROGRESS || errno == EWOULDBLOCK)
 						{
 							++i;
-							tcplog.SaveLog(LOG_WARN, "recv() error.");
+							tcplog.SaveLog(LOG_WARN, "recv() error(%s).", errno);
 							continue;
 						}
 						DWORD err = WSAGetLastError();
 						if (err == WSAECONNRESET) tcplog.SaveLog(LOG_INFO, "client IP(%s) shutdown.", m_client_map.find(socket)->second->GetIP().c_str());
-						else tcplog.SaveLog(LOG_INFO, "recv() error.");
+						else tcplog.SaveLog(LOG_INFO, "on recv() error.");
 						RemoveClient(socket);
 						break;
 					}

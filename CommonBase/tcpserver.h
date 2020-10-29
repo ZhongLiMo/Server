@@ -10,10 +10,7 @@
 #include <atomic>
 #include <condition_variable>
 
-#include "timer.h"
 #include "tcpclient.h"
-
-#define TCP_THREAD_TIMER_MANAGER TCPServer::GetInstance()->GetTimerManager()
 
 class TCPServer
 {
@@ -24,10 +21,6 @@ public:
 		static TCPServer tcpserver;
 		return &tcpserver;
 	}
-	TimerManager& GetTimerManager()
-	{
-		return m_timer_manager;
-	}
 private:
 	TCPServer();
 	virtual ~TCPServer();
@@ -36,12 +29,11 @@ private:
 	int cur_client_num();
 	void bind_and_listen();
 	SOCKET get_server_socket();
-	void set_socket(SOCKET& socket, bool is_server = false);
+	bool set_socket(const SOCKET& socket, bool is_server = false);
 private:
 	int												m_port;
 	SOCKET											m_socket;
 	fd_set											m_client_set;
-	TimerManager									m_timer_manager;
 	std::map<SOCKET, TCPClient*>					m_client_map;
 private:
 	void CloseServer();
@@ -62,7 +54,7 @@ private:
 	std::atomic_bool								close_flag;
 	std::atomic_bool								start_flag;
 	std::condition_variable_any						start_cond;
-	std::map<SOCKET, TCPClient*>					accecpt_client;
+	std::map<SOCKET, std::string>					accecpt_client;
 private:
 	std::thread										accept_thread;
 	std::thread										recvmsg_thread;
