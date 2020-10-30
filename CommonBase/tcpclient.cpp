@@ -12,6 +12,10 @@ TCPClient::~TCPClient()
 {
 	OnDisconnected();
 }
+void TCPClient::SendMsg(std::shared_ptr<TCPPacket> ptcppacket)
+{
+	TCPServer::GetInstance()->SendMsgToClient(m_socket, ptcppacket);
+}
 bool TCPClient::OnRecvMsg(std::shared_ptr<TCPPacket> ptcppacket)
 {
 	tcplog.SaveLog(LOG_INFO, "client IP(%s) recv cmd(%d) datd(%s).", m_ip.c_str(), ptcppacket->safe_check(), ptcppacket->body.c_str());
@@ -27,8 +31,4 @@ void TCPClient::OnConnected()
 void TCPClient::OnDisconnected()
 {
 	tcplog.SaveLog(LOG_INFO, "client logout IP(%s).", m_ip.c_str());
-}
-void TCPClient::SendMsg(std::shared_ptr<TCPPacket> ptcppacket)
-{
-	TCPServer::GetInstance()->SendMsgToClient(m_socket, ptcppacket);
 }

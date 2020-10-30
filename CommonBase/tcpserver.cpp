@@ -3,8 +3,8 @@
 #include "timer.h"
 #include "tcppacket.h"
 
-extern MyLog tcplog;
 TimerManager TCPTimer;
+MyLog tcplog("TCPLOG", "../log");
 
 TCPServer::TCPServer() : close_flag(false), start_flag(false),
 	accept_thread(&TCPServer::AcceptThread, this), 
@@ -207,10 +207,6 @@ void TCPServer::RecvMsgThread()
 				FD_SET(accecpt_map.begin()->first, &client_set);
 				client_map.insert(std::make_pair(accecpt_map.begin()->first, new TCPClient(accecpt_map.begin()->first, accecpt_map.begin()->second)));
 				client_mtx.unlock();
-			}
-			else
-			{
-				tcplog.SaveLog(LOG_ERROR, "new client setsocket() error.");
 			}
 			accecpt_map.erase(accecpt_map.begin());
 		}

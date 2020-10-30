@@ -12,46 +12,21 @@ using namespace std::chrono;
 #include "mysqldb.hpp"
 #include "costtime.hpp"
 
-MyLog tcplog("TCPServer", "../log");
-MyLog mysqllog("MYSQL", "../log");
-
 const char user[] = "root";
 const char pswd[] = "123456";
 const char host[] = "localhost";
 const char database[] = "test";
 const char tableName[] = "test_user";
 
-enum TEST_USER
-{
-	TEST_USER_ID,
-	TEST_USER_NAME,
-	TEST_USER_NICKNAME,
-	TEST_USER_SEX,
-	TEST_USER_MAX,
-};
-
-class Test
-{
-public:
-	Test():n(0){}
-	void test(int a)
-	{
-		n += a;
-		tcplog.SaveLog(LOG_DEBUG, "对象调用地址: %p n:%d" , this, n);
-	}
-	int n;
-};
-
-
 int main()
 {
-	CostTime costtime(tcplog, COST_TIME_CONSTRUCTOR);
+	CostTime costtime(COST_TIME_CONSTRUCTOR);
 	{
-		CostTime costtime(tcplog, __LINE__, "TCPServer->StartServer");
+		CostTime costtime(__LINE__, "TCPServer->StartServer");
 		TCPServer::GetInstance()->StartServer();
 	}
 	{
-		CostTime costtime(tcplog, __LINE__, "DBHandle->Connect");
+		CostTime costtime(__LINE__, "DBHandle->Connect");
 		DBHandle->Connect(host, user, pswd, database);
 	}
 	
@@ -59,6 +34,19 @@ int main()
 	cin.get();
 	return 0;
 }
+
+
+//class Test
+//{
+//public:
+//	Test() :n(0) {}
+//	void test(int a)
+//	{
+//		n += a;
+//		tcplog.SaveLog(LOG_DEBUG, "对象调用地址: %p n:%d", this, n);
+//	}
+//	int n;
+//};
 
 //std::thread testthread([]
 //{
@@ -83,6 +71,14 @@ int main()
 //testthread.detach();
 
 /*
+	enum TEST_USER
+{
+	TEST_USER_ID,
+	TEST_USER_NAME,
+	TEST_USER_NICKNAME,
+	TEST_USER_SEX,
+	TEST_USER_MAX,
+};
 
 	{
 		typedef DBRecord<TEST_USER, TEST_USER_MAX, tableName> Record;

@@ -1,6 +1,7 @@
 #ifndef MYLOG_H
 #define MYLOG_H
 
+#include <mutex>
 #include <string>
 
 enum LOG_LEVEL
@@ -23,7 +24,7 @@ enum LOG_LEVEL
 class MyLog
 {
 public:
-	MyLog(std::string file_name, std::string file_dir, long max_size = 1024 * 1024 * 100, LOG_LEVEL log_level = LOG_LEVEL_DEBUG);
+	MyLog(std::string file_name, std::string file_dir, long max_size = 1024 * 1024 * 100, LOG_LEVEL log_level = LOG_LEVEL_DEBUG, bool multithread = false);
 	virtual ~MyLog();
 public:
 	void SaveLog(LOG_LEVEL log_level, int line, const char *func, const char *format, ...);
@@ -42,6 +43,7 @@ private:
 	std::string			m_file_name;
 	std::string			m_file_dir;
 	LOG_LEVEL			m_log_level;
+	std::mutex*			m_p_mutex;
 	char				m_format_buf[1024*100];
 };
 

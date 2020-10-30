@@ -12,7 +12,8 @@
 #include <condition_variable>
 
 #include "mylog.h"
-extern MyLog mysqllog;
+
+MyLog mysqllog("MYSQL", "../log");
 
 typedef long long	Key;
 const Key			g_key = 20200001;
@@ -473,7 +474,7 @@ void Record<Index, size, tableName>::GetFields(const MYSQL_FIELD* mysqlField, co
 	if (!mysqlRow || !mysqlField)
 		return;
 	if (fieldsNum != static_cast<unsigned int>(size))
-		mysqllog.SaveLog(LOG_FATAL, "fieldsNum is not equal to size");
+		mysqllog.SaveLog(LOG_FATAL, "%s fieldsNum is not equal to size", tableName);
 	for (unsigned int i = 0; i < fieldsNum; ++i)
 	{
 		m_fieldArr[i].GetField(mysqlField[i].type, mysqlRow[i]);
@@ -484,7 +485,7 @@ void Record<Index, size, tableName>::InitDefault(const MYSQL_FIELD* mysqlField, 
 {
 	if (Record::s_default) return;
 	if (fieldsNum != static_cast<unsigned int>(size))
-		mysqllog.SaveLog(LOG_FATAL, "fieldsNum is not equal to size");
+		mysqllog.SaveLog(LOG_FATAL, "%s fieldsNum is not equal to size", tableName);
 	for (unsigned int i = 0; i < fieldsNum; ++i)
 	{
 		if (mysqlField[i].flags&PRI_KEY_FLAG || mysqlField[i].flags&AUTO_INCREMENT_FLAG)
@@ -569,7 +570,8 @@ void MysqlDB::Close()
 }
 bool MysqlDB::MysqlQuery(const std::string& strsql)
 {
-	if (!m_mysql) mysqllog.SaveLog(LOG_FATAL, "mysql not connect");
+	if (!m_mysql) 
+		mysqllog.SaveLog(LOG_FATAL, "mysql not connect");
 	if (mysql_query(m_mysql, strsql.c_str()))
 	{
 		mysqllog.SaveLog(LOG_ERROR, "sql(%s) query error(%s)", strsql.c_str(), mysql_error(m_mysql));
@@ -582,7 +584,8 @@ bool MysqlDB::MysqlQuery(const char(&strsql)[SQL_SIZE], bool updateNow)
 	std::unique_lock <std::mutex> lck(mysql_mtx);
 	if (updateNow)
 	{
-		if (!m_mysql) mysqllog.SaveLog(LOG_FATAL, "mysql not connect");
+		if (!m_mysql) 
+			mysqllog.SaveLog(LOG_FATAL, "mysql not connect");
 		if (mysql_query(m_mysql, strsql))
 		{
 			mysqllog.SaveLog(LOG_ERROR, "sql(%s) query error(%s)", strsql, mysql_error(m_mysql));
@@ -599,6 +602,7 @@ bool MysqlDB::MysqlQuery(const char(&strsql)[SQL_SIZE], bool updateNow)
 template<typename RecordType>
 void MysqlDB::InitDefaultRecord(const char(&strsql)[SQL_SIZE], const RecordType& recordType)
 {
+	std::unique_lock <std::mutex> lck(mysql_mtx);
 	if (mysql_query(m_mysql, strsql))
 		mysqllog.SaveLog(LOG_FATAL, "sql(%s) query error(%s)", strsql, mysql_error(m_mysql));
 	m_mysqlRes = mysql_store_result(m_mysql);
