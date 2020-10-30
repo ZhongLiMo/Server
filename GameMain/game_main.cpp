@@ -54,37 +54,33 @@ int main()
 		CostTime costtime(tcplog, __LINE__, "DBHandle->Connect");
 		DBHandle->Connect(host, user, pswd, database);
 	}
-
-	//std::thread testthread([]
-	//{
-	//	TimerManager manager;
-	//	Test test;
-	//	tcplog.SaveLog(LOG_DEBUG, "对象真实地址: %p", &test);
-	//	Timer timer(manager, &Test::test, &test, 1);
-
-	//	timer.StartTimer(100, true);
-	//	int n = 0;
-	//	while (1)
-	//	{
-	//		n++;
-	//		manager.OnTimer();
-	//		if (n == 2000000)
-	//		{
-	//			timer.StopTimer();
-	//			return;
-	//		}
-	//	}
-	//});
-	//testthread.detach();
-
 	
-
-	std::this_thread::sleep_for(std::chrono::seconds(3));
+	//std::this_thread::sleep_for(std::chrono::seconds(3));
 	cin.get();
 	return 0;
 }
 
+//std::thread testthread([]
+//{
+//	TimerManager manager;
+//	Test test;
+//	tcplog.SaveLog(LOG_DEBUG, "对象真实地址: %p", &test);
+//	Timer timer(manager, &Test::test, &test, 1);
 
+//	timer.StartTimer(100, true);
+//	int n = 0;
+//	while (1)
+//	{
+//		n++;
+//		manager.OnTimer();
+//		if (n == 2000000)
+//		{
+//			timer.StopTimer();
+//			return;
+//		}
+//	}
+//});
+//testthread.detach();
 
 /*
 

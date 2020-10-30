@@ -32,7 +32,7 @@ void TCPServer::StartServer(int port)
 }
 int TCPServer::cur_client_num()
 {
-	return m_client_set.fd_count;
+	return client_set.fd_count;
 }
 void TCPServer::bind_and_listen()
 {
@@ -142,22 +142,22 @@ void TCPServer::CloseServer()
 		accept_thread.join();
 		recvmsg_thread.join();
 		sendmsg_thread.join();
-		for (u_int i = 0; i < m_client_set.fd_count; ++i)
+		for (u_int i = 0; i < client_set.fd_count; ++i)
 		{
-			closesocket(m_client_set.fd_array[i]);
+			closesocket(client_set.fd_array[i]);
 		}
-		while (!m_client_map.empty())
+		while (!client_map.empty())
 		{
-			delete m_client_map.begin()->second;
-			m_client_map.erase(m_client_map.begin());
+			delete client_map.begin()->second;
+			client_map.erase(client_map.begin());
 		}
-		while (!accecpt_client.empty())
+		while (!accecpt_map.empty())
 		{
-			if (accecpt_client.begin()->first != INVALID_SOCKET)
-				closesocket(accecpt_client.begin()->first);
-			accecpt_client.erase(accecpt_client.begin());
+			if (accecpt_map.begin()->first != INVALID_SOCKET)
+				closesocket(accecpt_map.begin()->first);
+			accecpt_map.erase(accecpt_map.begin());
 		}
-		FD_ZERO(&m_client_set);
+		FD_ZERO(&client_set);
 		closesocket(m_socket);
 		WSACleanup();
 	}
@@ -180,7 +180,7 @@ void TCPServer::AcceptThread()
 			int len = sizeof(clientAddr);
 			SOCKET clientSocket = accept(m_socket, (sockaddr*)&clientAddr, &len);
 			accept_mtx.lock();
-			accecpt_client.insert(std::make_pair(clientSocket, inet_ntoa(clientAddr.sin_addr)));
+			accecpt_map.insert(std::make_pair(clientSocket, inet_ntoa(clientAddr.sin_addr)));
 			accept_mtx.unlock();
 		}
 	}
@@ -199,22 +199,25 @@ void TCPServer::RecvMsgThread()
 	{
 		TCPTimer.OnTimer();
 		accept_mtx.lock();
-		while (!accecpt_client.empty())
+		while (!accecpt_map.empty())
 		{
-			if (set_socket(accecpt_client.begin()->first))
+			if (set_socket(accecpt_map.begin()->first))
 			{
-				FD_SET(accecpt_client.begin()->first, &m_client_set);
-				m_client_map.insert(std::make_pair(accecpt_client.begin()->first, new TCPClient(accecpt_client.begin()->first, accecpt_client.begin()->second)));
+				client_mtx.lock();
+				FD_SET(accecpt_map.begin()->first, &client_set);
+				client_map.insert(std::make_pair(accecpt_map.begin()->first, new TCPClient(accecpt_map.begin()->first, accecpt_map.begin()->second)));
+				client_mtx.unlock();
 			}
 			else
 			{
 				tcplog.SaveLog(LOG_ERROR, "new client setsocket() error.");
 			}
-			accecpt_client.erase(accecpt_client.begin());
+			accecpt_map.erase(accecpt_map.begin());
 		}
 		accept_mtx.unlock();
-		if (!m_client_set.fd_count) continue;
-		read_set = m_client_set;
+		if (!cur_client_num()) 
+			continue;
+		read_set = client_set;
 		int result = select(FD_SETSIZE, &read_set, NULL, NULL, &timeout);
 		if (result == SOCKET_ERROR)
 		{
@@ -224,19 +227,19 @@ void TCPServer::RecvMsgThread()
 		else if (result > 0)
 		{
 			tcplog.SaveLog(LOG_INFO, "RecvmsgThread cur client num[%d]", cur_client_num());
-			for (u_int i = 0; i < m_client_set.fd_count;)
+			for (u_int i = 0; i < client_set.fd_count;)
 			{
-				if (!FD_ISSET(m_client_set.fd_array[i], &read_set))
+				if (!FD_ISSET(client_set.fd_array[i], &read_set))
 				{
 					++i;
 					continue;
 				}
-				SOCKET socket = m_client_set.fd_array[i];
-				if (m_client_map.find(socket) == m_client_map.end())
+				SOCKET socket = client_set.fd_array[i];
+				if (client_map.find(socket) == client_map.end())
 				{
 					client_mtx.lock();
 					closesocket(socket);
-					FD_CLR(socket, &m_client_set);
+					FD_CLR(socket, &client_set);
 					client_mtx.unlock();
 					tcplog.SaveLog(LOG_ERROR, "socket not find in map");
 					++i;
@@ -262,7 +265,7 @@ void TCPServer::RecvMsgThread()
 							continue;
 						}
 						DWORD err = WSAGetLastError();
-						if (err == WSAECONNRESET) tcplog.SaveLog(LOG_INFO, "client IP(%s) shutdown.", m_client_map.find(socket)->second->GetIP().c_str());
+						if (err == WSAECONNRESET) tcplog.SaveLog(LOG_INFO, "client IP(%s) shutdown.", client_map.find(socket)->second->GetIP().c_str());
 						else tcplog.SaveLog(LOG_INFO, "on recv() error.");
 						RemoveClient(socket);
 						break;
@@ -280,7 +283,7 @@ void TCPServer::RecvMsgThread()
 						ON_RECV_MSG:
 							std::shared_ptr<TCPPacket> ptcppacket = TCPPacket::CreateNew();
 							if (ptcppacket->save_packet(reinterpret_cast<TCPHeader*>(pheader), read_buf)
-								&& m_client_map.find(socket)->second->OnRecvMsg(ptcppacket))
+								&& client_map.find(socket)->second->OnRecvMsg(ptcppacket))
 							{
 								++i;
 							}
@@ -315,7 +318,7 @@ void TCPServer::SendMsgThread()
 		send_list.pop_front();
 		send_mtx.unlock();
 		client_mtx.lock();
-		if (FD_ISSET(send_msg.first, &m_client_set))
+		if (FD_ISSET(send_msg.first, &client_set))
 		{
 			send(send_msg.first, send_msg.second->data.c_str(), static_cast<int>(send_msg.second->data.length()), 0);
 		}
@@ -326,9 +329,9 @@ void TCPServer::RemoveClient(SOCKET socket)
 {
 	client_mtx.lock();
 	closesocket(socket);
-	FD_CLR(socket, &m_client_set);
-	delete m_client_map[socket];
-	m_client_map.erase(socket);
+	FD_CLR(socket, &client_set);
+	delete client_map[socket];
+	client_map.erase(socket);
 	client_mtx.unlock();
 }
 void TCPServer::SendMsgToClient(SOCKET socket, std::shared_ptr<TCPPacket> ptcppacket)

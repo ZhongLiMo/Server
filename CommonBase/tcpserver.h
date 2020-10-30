@@ -33,8 +33,6 @@ private:
 private:
 	int												m_port;
 	SOCKET											m_socket;
-	fd_set											m_client_set;
-	std::map<SOCKET, TCPClient*>					m_client_map;
 private:
 	void CloseServer();
 	void AcceptThread();
@@ -48,13 +46,18 @@ private:
 	SendList										send_list;
 	std::mutex										send_mtx;
 	std::condition_variable_any						send_cond;
+
+	fd_set											client_set;
+	std::map<SOCKET, TCPClient*>					client_map;
 	std::mutex										client_mtx;
-	std::mutex										start_mtx;
+
 	std::mutex										accept_mtx;
+	std::map<SOCKET, std::string>					accecpt_map;
+
+	std::mutex										start_mtx;
 	std::atomic_bool								close_flag;
 	std::atomic_bool								start_flag;
 	std::condition_variable_any						start_cond;
-	std::map<SOCKET, std::string>					accecpt_client;
 private:
 	std::thread										accept_thread;
 	std::thread										recvmsg_thread;
