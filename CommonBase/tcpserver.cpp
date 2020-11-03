@@ -329,6 +329,19 @@ void TCPServer::RemoveClient(SOCKET socket)
 	delete client_map[socket];
 	client_map.erase(socket);
 	client_mtx.unlock();
+	send_mtx.lock();
+	for (SendList::iterator ite = send_list.begin(); ite != send_list.end();)
+	{
+		if (ite->first == socket)
+		{
+			ite = send_list.erase(ite);
+		}
+		else
+		{
+			++ite;
+		}
+	}
+	send_mtx.unlock();
 }
 void TCPServer::SendMsgToClient(SOCKET socket, std::shared_ptr<TCPPacket> ptcppacket)
 {
