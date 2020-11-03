@@ -29,6 +29,22 @@ int main()
 		CostTime costtime(__LINE__, "DBHandle->Connect");
 		DBHandle->Connect(host, user, pswd, database);
 	}
+
+	TimerManager manager;
+	Timer timer(manager, [] {
+		cout << 666 << endl;
+	});
+	Timer timer2(manager, [] {
+		cout << 777 << endl;
+	});
+
+	timer.StartTimer(100, true);
+	timer2.StartTimer(200, true);
+	while (1)
+	{
+		manager.OnTimer();
+	}
+
 	
 	//std::this_thread::sleep_for(std::chrono::seconds(3));
 	cin.get();

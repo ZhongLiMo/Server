@@ -5,6 +5,11 @@
 #include <functional>
 
 class Timer;
+struct TimerCompare
+{
+	bool operator()(const Timer* left, const Timer* right) const;
+};
+using TimerSet = std::set<Timer*, TimerCompare>;
 class TimerManager
 {
 public:
@@ -18,8 +23,8 @@ private:
 private:
 	time_t						next_time;
 	bool						change_iter;
-	std::set<Timer*>			listeners;
-	std::set<Timer*>::iterator	timer_iter;
+	TimerSet					listeners;
+	TimerSet::iterator			timer_iter;
 	friend class Timer;
 };
 
@@ -41,6 +46,7 @@ private:
 	TimerManager&			timer_manager;
 	std::function<void()>	task;
 	friend class TimerManager;
+	friend struct TimerCompare;
 };
 
 #endif // !TIMER_H

@@ -11,13 +11,14 @@ TimerManager::~TimerManager()
 }
 void TimerManager::OnTimer()
 {
+	if (listeners.empty()) return;
 	time_t cur_time = BASE_FUNC::GetCurTimeMS();
 	if (next_time < cur_time)
 	{
 		next_time = cur_time + DEAFULT_TIMER_STAMP_MS;
 		for (timer_iter = listeners.begin(); timer_iter != listeners.end(); )
 		{
-			if ((*timer_iter)->next_time < cur_time)
+			if ((*timer_iter)->next_time <= cur_time)
 			{
 				(*timer_iter)->task();
 				if ((*timer_iter)->loop_time)
@@ -28,6 +29,12 @@ void TimerManager::OnTimer()
 				{
 					RemoveTimer(*timer_iter);
 				}
+			}
+			else
+			{
+				change_iter = true;
+				timer_iter = listeners.end();
+				break;
 			}
 			if (change_iter)
 			{
@@ -43,7 +50,7 @@ void TimerManager::OnTimer()
 void TimerManager::RemoveTimer(Timer* timer)
 {
 	if (!timer) return;
-	std::set<Timer*>::iterator ite = listeners.find(timer);
+	TimerSet::iterator ite = listeners.find(timer);
 	if (ite != listeners.end())
 	{
 		if (ite == timer_iter)
@@ -88,4 +95,8 @@ void Timer::StartTimer(int delay_time, bool loop)
 void Timer::RestartTimer(int delay_time, bool loop)
 {
 	StartTimer(delay_time, loop);
+}
+bool TimerCompare::operator()(const Timer* left, const Timer* right) const
+{
+	return left->next_time < right->next_time;
 }
